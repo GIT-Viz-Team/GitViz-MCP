@@ -30,6 +30,7 @@ class WorkspaceManager {
     // 選擇 Workspace 資料夾
     private async selectWorkspaceFolder(): Promise<string | undefined> {
         const folderUri = await vscode.window.showOpenDialog({
+            defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
             canSelectFiles: false,
             canSelectFolders: true,
             canSelectMany: false,

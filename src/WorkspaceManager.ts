@@ -1,47 +1,91 @@
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
+
+export interface RepoEntry {
+    label: string;
+    description: string;
+    path: string;
+}
 
 /**
- * WorkspaceManager 負責管理當前的工作區資料夾狀態，
- * 提供設定與取得 workspace 的能力，並顯示在 VSCode 的狀態列上。
+ * WorkspaceManager 負責管理目前使用中的 Git 存放庫，
+ * 包含自動/手動切換 repo、狀態顯示邏輯由外部傳入 callback 控制。
  */
 export class WorkspaceManager {
-    // 靜態實例，用於實現 Singleton 模式。
+    // Singleton 實例：確保全域僅有一個 WorkspaceManager
     private static instance: WorkspaceManager;
 
-    // 當前選擇的 workspace 路徑
-    private currentWorkspace: string | undefined;
+    // 目前選定的 Git 存放庫路徑，null 表示尚未選定
+    private currentRepoPath: string | null = null;
 
-    // 狀態列物件（左下角）
-    private statusBarItem: vscode.StatusBarItem;
+    // 是否啟用自動模式（根據目前開啟的檔案自動切換 repo）
+    private isAutoMode: boolean = true;
+
+    // VSCode Git API 實例，用來存取已開啟的 Git repository
+    private gitAPI: any;
+
+    private onRepoChangeCallback: (repoPath: string | null) => void;
+
+    private readonly virtualRepoLabel = '[Virtual] GitGPT Agent';
 
     /**
-     * 私有建構子，僅能透過 init() 初始化一次。
-     * @param context VSCode Extension 上下文
+     * 建構子 - 初始化 Git API、註冊 repo 事件、根據目前檔案選擇 repo
+     * @param onRepoChange 當 repo 發生變化時觸發的 callback
      */
-    private constructor(context: vscode.ExtensionContext) {
-        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-        this.statusBarItem.command = "gitgpt.selectWorkspace";
-        this.currentWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        this.updateStatusBarItem();
+    private constructor(onRepoChange: (repoPath: string | null) => void) {
+        this.onRepoChangeCallback = onRepoChange;
 
-        context.subscriptions.push(this.statusBarItem);
+        // 取得 Git 擴充功能的 API
+        const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+        this.gitAPI = gitExtension?.getAPI(1);
+
+        if (!this.gitAPI) {
+            vscode.window.showErrorMessage('無法取得 vscode.git 擴充功能');
+            return;
+        }
+
+        // 當有新的 Git repo 被開啟時註冊變動事件
+        this.gitAPI.onDidOpenRepository((repo: any) => {
+            // 如果目前是手動模式，且當前 repo 是選定的 repo，就更新狀態列
+            repo.state.onDidChange(() => {
+                if (!this.isAutoMode && this.currentRepoPath === repo.rootUri.fsPath) {
+                    this.updateStatus(repo.rootUri.fsPath);
+                }
+            });
+
+            // 檢查目前編輯的檔案是否屬於新開啟的 repo，是的話立刻更新
+            const editor = vscode.window.activeTextEditor;
+            const uri = editor?.document?.uri;
+            if (uri && uri.fsPath.startsWith(repo.rootUri.fsPath)) {
+                this.updateStatus(repo.rootUri.fsPath);
+            }
+        });
+
+        // 初始化：根據目前的開啟檔案更新狀態
+        const activeUri = vscode.window.activeTextEditor?.document?.uri;
+        if (activeUri) this.updateStatusAuto(activeUri);
+
+        // 使用者切換編輯器時，在自動模式下更新狀態列
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (editor?.document?.uri) {
+                this.updateStatusAuto(editor.document.uri);
+            }
+        });
     }
 
     /**
-     * 初始化 WorkspaceManager 實例，應於 activate() 中呼叫一次。
-     * @param context VSCode Extension 上下文
+     * 初始化 Singleton 實例
+     * @param onRepoChange repo 切換時要觸發的 callback
      */
-    public static init(context: vscode.ExtensionContext) {
+    public static init(onRepoChange: (repoPath: string | null) => void) {
         if (!WorkspaceManager.instance) {
-            WorkspaceManager.instance = new WorkspaceManager(context);
+            WorkspaceManager.instance = new WorkspaceManager(onRepoChange);
         }
     }
 
     /**
-     * 取得 Singleton 實例。若尚未初始化則丟出錯誤。
-     * @returns WorkspaceManager 的實例
+     * 取得 Singleton 實例，若尚未初始化會丟出錯誤
      */
     public static getInstance(): WorkspaceManager {
         if (!WorkspaceManager.instance) {
@@ -51,59 +95,80 @@ export class WorkspaceManager {
     }
 
     /**
-     * 彈出選擇資料夾對話框，供使用者選擇工作區。
-     * @returns 選取的資料夾路徑（或 undefined）
+     * 取得目前選定的 Git repo 路徑，若未選定會丟出錯誤
      */
-    public async selectWorkspaceFolder(): Promise<string | undefined> {
-        const folderUri = await vscode.window.showOpenDialog({
-            defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false,
-            openLabel: "select folder",
-        });
-
-        return folderUri?.[0]?.fsPath;
-    }
-
-    /**
-     * 設定當前 workspace，並更新狀態列。
-     * @param folderPath 要設定的資料夾路徑
-     * @returns 是否設定成功
-     */
-    public setWorkspace(folderPath: string): boolean {
-        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-            this.currentWorkspace = folderPath;
-            this.updateStatusBarItem();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 取得目前設定的 workspace 路徑。
-     * 若尚未設定則丟出錯誤。
-     * @returns 當前 workspace 路徑
-     */
-    public getCurrentWorkspace(): string {
-        if (!this.currentWorkspace) {
+    public getCurrentRepoPath(): string {
+        if (!this.currentRepoPath) {
             throw new Error("No workspace folder is set.");
         }
-        return this.currentWorkspace;
+        return this.currentRepoPath;
     }
 
     /**
-     * 更新 VSCode 狀態列中顯示的 workspace 名稱與提示。
+     * 更新當前 repo 狀態與回傳通知
+     * @param repoPath repo 的唯一識別（path）
      */
-    private updateStatusBarItem() {
-        if (this.currentWorkspace) {
-            const folderName = path.basename(this.currentWorkspace);
-            this.statusBarItem.text = `$(folder) ${folderName}`;
-            this.statusBarItem.tooltip = this.currentWorkspace;
-        } else {
-            this.statusBarItem.text = `$(folder) No Workspace`;
-            this.statusBarItem.tooltip = "No workspace folder selected";
+    public updateStatus(repoPath: string) {
+        this.currentRepoPath = repoPath;
+        this.onRepoChangeCallback(this.currentRepoPath);
+    }
+
+    /**
+     * 自動模式：依據當前檔案 uri 判斷其所屬 repo 並觸發狀態更新
+     * @param fileUri 使用者當前開啟的檔案 uri
+     */
+    public updateStatusAuto(fileUri: vscode.Uri) {
+        if (!this.isAutoMode) return;
+        const repo = this.gitAPI.getRepository(fileUri);
+
+        // 僅當有偵測到 repo 時才更新
+        if (repo?.rootUri?.fsPath) {
+            this.updateStatus(repo.rootUri.fsPath);
         }
-        this.statusBarItem.show();
+    }
+
+    /**
+     * 手動設定目前選擇的 repo 或切換為自動模式
+     * @param path 選擇的 repo path，或特殊值 '__auto__'
+     */
+    public setSelectedRepo(path: string) {
+        if (path == '__auto__') {
+            this.isAutoMode = true;
+            const editor = vscode.window.activeTextEditor;
+            if (editor) this.updateStatusAuto(editor.document.uri);
+        } else {
+            this.isAutoMode = false;
+            this.updateStatus(path);
+        }
+
+    }
+
+    /**
+     * 取得所有可選擇的 Git repo 清單（含 Auto 與虛擬 repo）
+     */
+    public getAvailableRepos(): RepoEntry[] {
+        const repos: RepoEntry[] = this.gitAPI.repositories.map((repo: any) => ({
+            label: path.basename(repo.rootUri.fsPath),
+            description: repo.rootUri.fsPath,
+            path: repo.rootUri.fsPath,
+            auto: false
+        }));
+
+        // 加入虛擬 repo 條目
+        repos.push({
+            label: this.virtualRepoLabel,
+            description: 'A virtual GitGPT agent repo with no real file system',
+            path: '__virtual_gitgpt__'
+        });
+
+        // 在最前面加入 Auto 模式選項
+        return [
+            {
+                label: 'Auto',
+                description: 'Automatically switch according to the current file',
+                path: '__auto__'
+            },
+            ...repos
+        ];
     }
 }

@@ -10,7 +10,7 @@ export class GetGitLogTool implements vscode.LanguageModelTool<{}> {
     async invoke(): Promise<vscode.LanguageModelToolResult> {
         let cwd: string;
         try {
-            cwd = WorkspaceManager.getInstance().getCurrentWorkspace();
+            cwd = WorkspaceManager.getInstance().getCurrentRepoPath();
         } catch {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart("No workspace set.")

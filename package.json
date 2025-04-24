@@ -24,23 +24,36 @@
         "modelDescription": "This tool retrieves the git log for the current workspace in a predefined format, which can then be visualized by Git Log Viewer. The log is formatted using the Git command: `git log --all --pretty=format:\"%h (%an) (%ar) (%s) %d [%p]\"`. This tool is essential for fetching the current git history before visualizing or manipulating it in Git Log Viewer."
       },
       {
-        "name": "set_workspace",
-        "displayName": "Set Workspace Folder",
-        "toolReferenceName": "setWorkspace",
+        "name": "select_repo",
+        "displayName": "Select Git Repository",
+        "toolReferenceName": "selectRepo",
         "canBeReferencedInPrompt": true,
-        "userDescription": "Set the current workspace folder path",
-        "modelDescription": "Sets the workspace folder path for GitGPT operations. The path must be an existing directory.",
+        "userDescription": "Select the current Git repository by absolute path, or choose automatic or virtual mode.",
+        "modelDescription": "Selects the Git repository for GitGPT operations. You can:\n\n- Provide an absolute path to a Git repository folder (e.g., \"/home/user/project\") to operate on the actual project.\n- Use '__auto__' to let the system automatically select a repository based on the currently active file.\n- Use '__virtual_gitgpt__' to activate a virtual agent repository. This acts as a blank canvas with an empty git log history, useful when the model wants to demonstrate Git concepts or simulate git log changes that are not tied to a real project.\n\nTo find valid real repositories, call the 'list_repos' tool to get available paths.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "path": {
               "type": "string",
-              "description": "Absolute path to the workspace folder"
+              "description": "Absolute path to the Git repository, or '__auto__' for automatic, or '__virtual_gitgpt__' for a blank canvas"
             }
           },
           "required": [
             "path"
           ]
+        }
+      },
+      {
+        "name": "list_repos",
+        "displayName": "List Git Repositories",
+        "toolReferenceName": "listRepos",
+        "canBeReferencedInPrompt": true,
+        "userDescription": "List all available Git repositories including auto and virtual modes.",
+        "modelDescription": "Returns the list of available Git repositories that can be selected using the select_repo tool. Includes actual repositories, automatic mode, and virtual repository options.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": []
         }
       },
       {
@@ -91,12 +104,8 @@
         "icon": "$(git-branch)"
       },
       {
-        "command": "gitgpt.selectWorkspace",
-        "title": "GitGPT: Select Workspace"
-      },
-      {
-        "command": "gitgpt.setWorkspace",
-        "title": "GitGPT: Set Workspace"
+        "command": "gitgpt.selectRepo",
+        "title": "GitGPT: Set Repository"
       }
     ]
   },

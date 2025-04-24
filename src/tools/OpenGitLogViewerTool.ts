@@ -10,7 +10,7 @@ export class OpenGitLogViewerTool implements vscode.LanguageModelTool<{}> {
     async invoke() {
         let cwd: string;
         try {
-            cwd = WorkspaceManager.getInstance().getCurrentWorkspace();
+            cwd = WorkspaceManager.getInstance().getCurrentRepoPath();
         } catch (e: any) {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(e)

@@ -7,19 +7,16 @@ import { WebviewPanel } from './webviewPanel';
 import * as path from 'path';
 import * as fs from 'fs';
 import { WorkspaceManager } from './WorkspaceManager';
-import { SetWorkspaceTool } from './tools/SetWorkspaceTool';
+import { SelectRepoTool, ListReposTool } from './tools/SelectRepoTool';
 import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
 import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
 import { GetGitLogTool } from './tools/GetGitLog';
 import { getGitLogText } from './git';
 
 
-export async function ensureGitHubMcpServerRegistered(context: vscode.ExtensionContext,
-    workspaceManager: WorkspaceManager) {
-    let workspacePath: string;
-    try {
-        workspacePath = workspaceManager.getCurrentWorkspace();
-    } catch (e) {
+export async function ensureGitHubMcpServerRegistered() {
+    const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspacePath) {
         return;
     }
     const vscodeFolder = path.join(workspacePath, '.vscode');
@@ -118,7 +115,24 @@ de5383e (wei) (2 hours ago) (feat: add some texts)  [2c29e88]
 0f1d08b (wei) (2 hours ago) (init commit)  []`
 
 export function activate(context: vscode.ExtensionContext) {
-    WorkspaceManager.init(context);
+
+    // debug
+    const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    statusBar.command = "gitgpt.selectRepo";
+    statusBar.tooltip = "目前使用中的 Git 存放庫";
+    statusBar.text = '$(repo) No Repo';
+    statusBar.show();
+
+    const onRepoChangeCallback = (repoPath: string | null) => {
+        if (repoPath) {
+            statusBar.text = `$(repo) ${path.basename(repoPath)}`;
+        } else {
+            statusBar.text = '$(repo) No Repo';
+        }
+        statusBar.show();
+    }
+
+    WorkspaceManager.init(onRepoChangeCallback);
     WebviewPanel.init(context);
 
     const workspaceManager = WorkspaceManager.getInstance();
@@ -129,7 +143,7 @@ export function activate(context: vscode.ExtensionContext) {
             const webviewPanel = WebviewPanel.getInstance();
             let cwd: string;
             try {
-                cwd = workspaceManager.getCurrentWorkspace();
+                cwd = workspaceManager.getCurrentRepoPath();
             } catch (e: any) {
                 vscode.window.showErrorMessage(e);
                 return;
@@ -142,135 +156,31 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    const selectWorkspaceCommand = vscode.commands.registerCommand("gitgpt.selectWorkspace", async () => {
-        const folderPath = await workspaceManager.selectWorkspaceFolder();
-        if (folderPath) {
-            workspaceManager.setWorkspace(folderPath);
-            vscode.window.showInformationMessage(`Selected workspace: ${folderPath}`);
+    const selectRepo = vscode.commands.registerCommand('gitgpt.selectRepo', async () => {
+        const choices = workspaceManager.getAvailableRepos();
+        const picked = await vscode.window.showQuickPick(choices, {
+            placeHolder: '選擇 Git 存放庫',
+        });
+        if (picked) {
+            workspaceManager.setSelectedRepo(picked.path);
         }
     })
 
-    const setWorkspaceCommand = vscode.commands.registerCommand("gitgpt.setWorkspace", (folderPath: string) => {
-        const success = workspaceManager.setWorkspace(folderPath);
-        if (success) {
-            vscode.window.showInformationMessage(`Workspace set to: ${folderPath}`);
-        } else {
-            vscode.window.showErrorMessage(`Invalid workspace path: ${folderPath}`);
-        }
-    })
 
-    context.subscriptions.push(openGitLogViewer, selectWorkspaceCommand, setWorkspaceCommand);
+
+    context.subscriptions.push(openGitLogViewer, selectRepo);
 
     // 註冊 LLM 工具
     context.subscriptions.push(
         vscode.lm.registerTool('open_git_log_viewer', new OpenGitLogViewerTool()),
         vscode.lm.registerTool('show_git_log_message', new VisualizeGitLogTool()),
-        vscode.lm.registerTool('set_workspace', new SetWorkspaceTool()),
+        vscode.lm.registerTool('select_repo', new SelectRepoTool()),
+        vscode.lm.registerTool('list_repos', new ListReposTool()),
         vscode.lm.registerTool('get_git_log', new GetGitLogTool())
     );
 
-    ensureGitHubMcpServerRegistered(context, workspaceManager);
+    ensureGitHubMcpServerRegistered();
 
-
-    ////
-    let currentRepoPath: string | null = null;
-    let isAutoMode: boolean = true;
-
-    const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
-    const gitAPI = gitExtension?.getAPI(1);
-
-    if (!gitAPI) {
-        vscode.window.showErrorMessage('無法取得 vscode.git 擴充功能');
-        return;
-    }
-
-    // 建立 Status Bar 控制項
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-    statusBarItem.command = 'customGit.selectRepo';
-    statusBarItem.tooltip = '目前使用中的 Git 存放庫';
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
-
-    gitAPI.onDidOpenRepository((repo: { rootUri: { fsPath: any; }; state: { onDidChange: (arg0: () => void) => void; HEAD: { name: any; }; }; }) => {
-        console.log('Repo opened:', repo.rootUri.fsPath);
-
-        repo.state.onDidChange(() => {
-            if (!isAutoMode && currentRepoPath && currentRepoPath === repo.rootUri.fsPath) {
-                updateStatusBar(repo);
-            }
-        });
-
-        const editor = vscode.window.activeTextEditor;
-        const uri = editor?.document?.uri;
-        if (uri && uri.fsPath.startsWith(repo.rootUri.fsPath)) {
-            updateStatusBar(repo);
-        }
-    });
-
-    function updateStatusBar(repo: any | null) {
-        if (repo) {
-            currentRepoPath = repo.rootUri.fsPath;
-            const repoName = path.basename(currentRepoPath!);
-            statusBarItem.text = `$(repo) ${repoName}`;
-        } else {
-            currentRepoPath = null;
-            statusBarItem.text = '$(repo) No Repo';
-        }
-    }
-
-    function updateStatusBarAuto(fileUri: vscode.Uri) {
-        if (!isAutoMode) return;
-        const repo = gitAPI.getRepository(fileUri);
-        updateStatusBar(repo);
-    }
-
-    // 根據目前開啟的檔案自動切換 repo
-    vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (editor?.document?.uri) {
-            updateStatusBarAuto(editor.document.uri);
-        }
-    });
-
-
-    // 點選 Status Bar：手動選擇 repo 或自動模式
-    vscode.commands.registerCommand('customGit.selectRepo', async () => {
-        const choices = [
-            {
-                label: '自動',
-                description: '根據目前檔案自動切換',
-                auto: true,
-            },
-            ...gitAPI.repositories.map((repo: { rootUri: { fsPath: string; }; }) => (
-                {
-                    label: path.basename(repo.rootUri.fsPath),
-                    description: repo.rootUri.fsPath,
-                    repo,
-                    auto: false,
-                })),
-        ];
-
-        const picked = await vscode.window.showQuickPick(choices, {
-            placeHolder: '選擇 Git 存放庫',
-        });
-
-        if (!picked) return;
-
-        if (picked.auto) {
-            isAutoMode = true;
-            const editor = vscode.window.activeTextEditor;
-            if (editor) updateStatusBarAuto(editor.document.uri);
-            console.log(`[Switch] 切換為自動模式`);
-        } else {
-            isAutoMode = false;
-            currentRepoPath = picked.repo.rootUri.fsPath;
-            updateStatusBar(picked.repo);
-            console.log(`[Switch] 鎖定 repo：${picked.label}`);
-        }
-    });
-
-    // 初始啟動狀態列
-    const activeUri = vscode.window.activeTextEditor?.document?.uri;
-    if (activeUri) updateStatusBarAuto(activeUri);
 }
 
 

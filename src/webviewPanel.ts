@@ -161,7 +161,6 @@ export class WebviewPanel {
         // 使用 webview.asWebviewUri 轉換 CSS 文件的路徑
         const cssUri = this._panel.webview.asWebviewUri(
             vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'style.css')
-            // vscode.Uri.joinPath(this.context.extensionUri, 'src', 'webview', 'media', 'css', 'style.css')
         );
         htmlContent = htmlContent.replace('${styleUri}', cssUri.toString());
 
@@ -179,7 +178,7 @@ export class WebviewPanel {
     
         // 使用 webview.asWebviewUri 轉換 JS 文件的路徑
         const scriptUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js')
+            vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'main.js')
         );
         htmlContent = htmlContent.replace('${scriptUri}', scriptUri.toString());
     

@@ -8,22 +8,23 @@ export class OpenGitLogViewerTool implements vscode.LanguageModelTool<{}> {
     readonly name = 'open_git_log_viewer';
 
     async invoke() {
-        let cwd: string;
         try {
-            cwd = WorkspaceManager.getInstance().getCurrentRepoPath();
+            const path = WorkspaceManager.getInstance().getCurrentRepoPath();
+            const gitLog = await getGitLogText(path);
+            if (gitLog) {
+                WebviewPanel.getInstance().sendMessage({
+                    type: 'getGitLog', "payload": {
+                        "path": path,
+                        "log": gitLog,
+                        "afterLog": ""
+                    }
+                });
+            }
         } catch (e: any) {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(e)
             ]);
         }
-
-        const gitLog = await getGitLogText(cwd);
-
-        WebviewPanel.getInstance().sendMessage({
-            type: "git_log",
-            gitLog
-        });
-
         return new vscode.LanguageModelToolResult([
             new vscode.LanguageModelTextPart("Git Log Viewer has been opened.")
         ]);

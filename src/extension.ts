@@ -6,7 +6,7 @@ const exec = promisify(execCb);
 import { WebviewPanel } from './webviewPanel';
 import * as path from 'path';
 import * as fs from 'fs';
-import { WorkspaceManager } from './WorkspaceManager';
+import { WorkspaceManager, RepoEntry } from './WorkspaceManager';
 import { SelectRepoTool, ListReposTool } from './tools/SelectRepoTool';
 import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
 import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
@@ -115,7 +115,6 @@ de5383e (wei) (2 hours ago) (feat: add some texts)  [2c29e88]
 0f1d08b (wei) (2 hours ago) (init commit)  []`
 
 export function activate(context: vscode.ExtensionContext) {
-
     // debug
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBar.command = "gitgpt.selectRepo";
@@ -124,6 +123,15 @@ export function activate(context: vscode.ExtensionContext) {
     statusBar.show();
 
     const onRepoChangeCallback = (repoPath: string | null) => {
+        if (gitLog) {
+            webviewPanel.sendMessage({
+                type: 'getGitLog', "payload": {
+                    "path": repoPath,
+                    "log": gitLog,
+                    "afterLog": ""
+                }
+            });
+        }
         if (repoPath) {
             statusBar.text = `$(repo) ${path.basename(repoPath)}`;
         } else {
@@ -136,23 +144,49 @@ export function activate(context: vscode.ExtensionContext) {
     WebviewPanel.init(context);
 
     const workspaceManager = WorkspaceManager.getInstance();
+    const webviewPanel = WebviewPanel.getInstance();
+
+    webviewPanel.onDidReceiveMessage((message) => {
+        if (message.type == "switchRepo") {
+            const path = message.path
+            workspaceManager.setSelectedRepo(path)
+        }
+    })
+
+    const repos = workspaceManager.getAvailableRepos();
+    webviewPanel.sendMessage({
+        type: 'getAvailableRepo', "payload": {
+            "repos": repos.map((repo: any) => (
+                {
+                    label: repo.label,
+                    description: repo.description,
+                    path: repo.path
+                }
+            ))
+        }
+    });
 
     const openGitLogViewer = vscode.commands.registerCommand(
         "gitgpt.openGitLogViewer",
         async () => {
-            const webviewPanel = WebviewPanel.getInstance();
-            let cwd: string;
             try {
-                cwd = workspaceManager.getCurrentRepoPath();
+                const path = workspaceManager.getCurrentRepoPath();
+                const gitLog = await getGitLogText(path);
+                if (gitLog) {
+                    webviewPanel.sendMessage({
+                        type: 'getGitLog', "payload": {
+                            "path": path,
+                            "log": gitLog,
+                            "afterLog": ""
+                        }
+                    });
+                }
             } catch (e: any) {
                 vscode.window.showErrorMessage(e);
                 return;
             }
 
-            const gitLog = await getGitLogText(cwd);
-            if (gitLog) {
-                webviewPanel.sendMessage({ type: 'git_log', gitLog });
-            }
+
         }
     );
 

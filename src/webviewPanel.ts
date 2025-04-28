@@ -100,28 +100,6 @@ export class WebviewPanel {
     }
 
     /**
-     * 創建 Webview 面板，並進行必要的配置。
-     * @param context - VSCode 擴充上下文。
-     * @returns 創建的 Webview 面板。
-     */
-    private createPanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
-        const panel = vscode.window.createWebviewPanel(
-            'webviewId',
-            'WebView Title',
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                // 限制只有某些路徑下的檔案能夠被讀取
-                localResourceRoots: [
-                    // 限制只能載入 extension(專案目錄) 的路徑底下的資源
-                    vscode.Uri.file(context.extensionPath)
-                ]
-            }
-        );
-        return panel;
-    }
-
-    /**
      * 設置 Webview 面板的生命週期事件監聽器，例如銷毀和視圖狀態變更。
      */
     private onLifeCycleChanges() {

@@ -26,7 +26,13 @@ export class VisualizeGitLogTool implements vscode.LanguageModelTool<IVisualizes
     }
 
     async invoke(options: vscode.LanguageModelToolInvocationOptions<IVisualizesGitLog>) {
-        WebviewPanel.getInstance().sendMessage({ type: 'showLog', log: options.input.after });
+        WebviewPanel.getInstance().sendMessage({
+            type: 'getGitLog', "payload": {
+                "path": "__virtual_gitgpt__",
+                "log": options.input.before,
+                "afterLog": options.input.after
+            }
+        });
 
         return new vscode.LanguageModelToolResult([
             new vscode.LanguageModelTextPart(`Visualized AI-generated Git log in the Git Log Viewer.`)

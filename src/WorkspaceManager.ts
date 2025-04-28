@@ -16,7 +16,7 @@ export class WorkspaceManager {
     // Singleton 實例：確保全域僅有一個 WorkspaceManager
     private static instance: WorkspaceManager;
 
-    // 目前選定的 Git 存放庫路徑，null 表示尚未選定
+    // 目前選定的 Git 存放庫路徑，null 表示尚未選定`
     private currentRepoPath: string | null = null;
 
     // 是否啟用自動模式（根據目前開啟的檔案自動切換 repo）
@@ -151,7 +151,6 @@ export class WorkspaceManager {
             label: path.basename(repo.rootUri.fsPath),
             description: repo.rootUri.fsPath,
             path: repo.rootUri.fsPath,
-            auto: false
         }));
 
         // 加入虛擬 repo 條目

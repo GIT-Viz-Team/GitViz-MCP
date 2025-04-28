@@ -182,7 +182,7 @@ export class WebviewPanel {
 
         // 使用 webview.asWebviewUri 轉換 JS 文件的路徑
         const scriptUri = this._panel.webview.asWebviewUri(
-            vscode.Uri.joinPath(WebviewPanel._context.extensionUri, 'dist', 'webview.js')
+            vscode.Uri.joinPath(WebviewPanel._context.extensionUri, 'dist', 'main.js')
         );
         htmlContent = htmlContent.replace('${scriptUri}', scriptUri.toString());
 

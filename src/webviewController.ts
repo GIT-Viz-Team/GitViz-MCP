@@ -3,11 +3,11 @@ import * as path from "path";
 import * as fs from "fs";
 
 /**
- * WebviewPanel 類別負責管理在 VSCode 中的單一 Webview 面板實例。
+ * WebviewController 類別負責管理在 VSCode 中的單一 Webview 面板實例。
  */
-export class WebviewPanel {
-    // 靜態實例，用於保存 WebviewPanel 的唯一實例（Singleton 模式）。
-    private static _instance: WebviewPanel | null = null;
+export class WebviewController {
+    // 靜態實例，用於保存 WebviewController 的唯一實例（Singleton 模式）。
+    private static _instance: WebviewController | null = null;
     private static _context: vscode.ExtensionContext;
 
     // 真正的 VSCode Webview 面板實例。
@@ -22,88 +22,78 @@ export class WebviewPanel {
     // 用於保存可釋放資源的陣列，確保正確清理。
     private _disposables: vscode.Disposable[] = [];
 
-    private readyResolve: (value: void) => void = () => { };
-    private readyPromise: Promise<void>;
+    private readyResolve: (() => void) | null = null;
+    private readyPromise: Promise<void> | null = null;
 
     /**
      * 私有建構子，強制實現 Singleton 模式。
      */
-    private constructor() {
-        this.readyPromise = new Promise((resolve) => {
-            this.readyResolve = resolve;
-        });
-    }
+    private constructor() { }
 
     /**
-     * 初始化 WebviewPanel 所需的 ExtensionContext，必須在 getInstance() 之前呼叫。
+     * 初始化 WebviewController 所需的 ExtensionContext，必須在 getInstance() 之前呼叫。
      * @param context VSCode ExtensionContext，用來取得擴充套件的根目錄與資源存取。
      */
     public static init(context: vscode.ExtensionContext) {
         this._context = context;
         if (!this._instance) {
-            this._instance = new WebviewPanel();
+            this._instance = new WebviewController();
         }
     }
 
     /**
-     * 獲取 WebviewPanel 的單一實例。
-     * @returns WebviewPanel 的單一實例。
+     * 獲取 WebviewController 的單一實例。
+     * @returns WebviewController 的單一實例。
      */
-    public static getInstance(): WebviewPanel {
+    public static getInstance(): WebviewController {
         if (!this._instance) {
-            throw new Error("WebviewPanel 尚未初始化，請先呼叫 init(context)");
+            throw new Error("WebviewController 尚未初始化，請先呼叫 init(context)");
         }
         return this._instance;
     }
 
     /**
      * 顯示 Webview 面板。如果尚未建立，會先初始化並建立新的實例。
-     * 若面板已存在，會將其帶到前景。
      */
-    public static show() {
-        const instance = this.getInstance();
-        if (!instance._panel) {
-            instance.createWebviewPanel();
-        } else {
+    public async createPanel() {
+        if (!this._panel) {
+            this.resetReadyPromise();
 
-            instance._panel!.reveal(vscode.ViewColumn.Two);
+            this._panel = vscode.window.createWebviewPanel(
+                "gitGPT",
+                "Git GPT",
+                { preserveFocus: true, viewColumn: vscode.ViewColumn.Two },
+                {
+                    enableScripts: true,
+                    localResourceRoots: [
+                        vscode.Uri.file(WebviewController._context.extensionPath),
+                    ],
+                    retainContextWhenHidden: true,
+                }
+            );
+
+            this._panel.onDidDispose(() => {
+                this.dispose();
+                this._panel = null; // 保留 instance，只清 panel
+            }, null, this._disposables);
+
+            this._disposables.push(this._panel);
+
+            this.loadWebviewContent();
+            this.onLifeCycleChanges();
+            this.onWebViewMessage();
+
+            await this.ready();
+        } else {
+            this._panel!.reveal(vscode.ViewColumn.Two, true);
         }
     }
 
-    /**
-     * 是否 Webview Panel 目前正在顯示。
-     */
-    public static isVisible(): boolean {
-        return !!this._instance && !!this._instance._panel?.visible;
-    }
 
-    /**
-   * 建立 WebviewPanel 物件與相關事件綁定。
-   */
-    private createWebviewPanel() {
-        this._panel = vscode.window.createWebviewPanel(
-            "gitGPT",
-            "Git GPT",
-            { preserveFocus: true, viewColumn: vscode.ViewColumn.Two },
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.file(WebviewPanel._context.extensionPath),
-                ],
-                retainContextWhenHidden: true,
-            }
-        );
-
-        this._panel.onDidDispose(() => {
-            this.dispose();
-            this._panel = null; // 保留 instance，只清 panel
-        }, null, this._disposables);
-
-        this._disposables.push(this._panel);
-
-        this.loadWebviewContent();
-        this.onLifeCycleChanges();
-        this.onWebViewMessage();
+    private resetReadyPromise() {
+        this.readyPromise = new Promise((resolve) => {
+            this.readyResolve = resolve;
+        });
     }
 
     /**
@@ -124,8 +114,13 @@ export class WebviewPanel {
      * 向 WebView 傳送消息。
      * @param message json 格式
      */
-    public sendMessage(message: any) {
-        this.webview.postMessage(message);
+    public async sendMessage(message: any) {
+        if (!this._panel) {
+            return;
+        }
+
+        await this.ready();
+        this._panel.webview.postMessage(message);
     }
 
     /**
@@ -134,6 +129,7 @@ export class WebviewPanel {
      */
     public notifyReady() {
         this.readyResolve?.();
+        this.readyResolve = null;
     }
 
     /**
@@ -141,13 +137,6 @@ export class WebviewPanel {
      */
     public async ready() {
         await this.readyPromise;
-    }
-
-    /**
-     * 獲取面板的 Webview 物件。
-     */
-    private get webview() {
-        return this._panel!.webview;
     }
 
     /**
@@ -168,7 +157,11 @@ export class WebviewPanel {
     private onWebViewMessage() {
         this._panel?.webview.onDidReceiveMessage(
             (message) => {
-                this._messageEmitter.fire(message); // 發射接收到的 Webview 消息。
+                if (message.type === "ready") {
+                    this.notifyReady();
+                } else {
+                    this._messageEmitter.fire(message); // 外部自訂邏輯
+                }
             },
             null,
             this._disposables
@@ -182,7 +175,7 @@ export class WebviewPanel {
     private loadWebviewContent(): void {
         // 加載 HTML 內容
         const htmlPath = path.join(
-            WebviewPanel._context.extensionPath,
+            WebviewController._context.extensionPath,
             "dist",
             "webview.html"
         );
@@ -191,7 +184,7 @@ export class WebviewPanel {
         // 使用 webview.asWebviewUri 轉換 CSS 文件的路徑
         const cssUri = this._panel!.webview.asWebviewUri(
             vscode.Uri.joinPath(
-                WebviewPanel._context.extensionUri,
+                WebviewController._context.extensionUri,
                 "dist",
                 "style.css"
             )
@@ -213,7 +206,7 @@ export class WebviewPanel {
 
         // 使用 webview.asWebviewUri 轉換 JS 文件的路徑
         const scriptUri = this._panel!.webview.asWebviewUri(
-            vscode.Uri.joinPath(WebviewPanel._context.extensionUri, "dist", "main.js")
+            vscode.Uri.joinPath(WebviewController._context.extensionUri, "dist", "main.js")
         );
         htmlContent = htmlContent.replace("${scriptUri}", scriptUri.toString());
 

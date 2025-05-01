@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { WebviewPanel } from "./webviewPanel";
+import { WebviewController } from "./webviewController";
 import * as path from "path";
 import * as fs from "fs";
 import { WorkspaceManager } from "./WorkspaceManager";
@@ -8,6 +8,106 @@ import { OpenGitLogViewerTool } from "./tools/OpenGitLogViewerTool";
 import { VisualizeGitLogTool } from "./tools/VisualizeGitLogTool";
 import { GetGitLogTool } from "./tools/GetGitLog";
 import { getGitLogText } from "./git";
+
+export function activate(context: vscode.ExtensionContext) {
+
+    const onRepoChangeCallback = async (repoPath: string | null) => {
+        if (!repoPath) {
+            return;
+        }
+
+        const gitLog = await getGitLogText(repoPath);
+        if (gitLog) {
+            WebviewController.getInstance().sendMessage({
+                type: "getGitLog",
+                payload: {
+                    path: repoPath,
+                    log: gitLog,
+                    afterLog: "",
+                },
+            });
+        }
+
+    };
+
+    WebviewController.init(context);
+    WorkspaceManager.init(onRepoChangeCallback);
+
+    const workspaceManager = WorkspaceManager.getInstance();
+    const webviewController = WebviewController.getInstance();
+
+    webviewController.onDidReceiveMessage((message) => {
+        if (message.type === "switchRepo") {
+            const path = message.payload.path;
+            workspaceManager.setSelectedRepo(path);
+        }
+    });
+
+    const openGitLogViewer = vscode.commands.registerCommand(
+        "gitgpt.openGitLogViewer",
+        async () => {
+            try {
+                await webviewController.createPanel();
+
+                const repos = workspaceManager.getAvailableRepos();
+                webviewController.sendMessage({
+                    type: "getAvailableRepo",
+                    payload: {
+                        repos: repos.map((repo: any) => ({
+                            label: repo.label,
+                            description: repo.description,
+                            path: repo.path,
+                        })),
+                    },
+                });
+                const path = workspaceManager.getCurrentRepoPath();
+                const gitLog = await getGitLogText(path);
+                if (gitLog) {
+                    webviewController.sendMessage({
+                        type: "getGitLog",
+                        payload: {
+                            path: path,
+                            log: gitLog,
+                            afterLog: "",
+                        },
+                    });
+                }
+            } catch (e: any) {
+                vscode.window.showErrorMessage(e);
+                return;
+            }
+        }
+    );
+
+    const selectRepo = vscode.commands.registerCommand(
+        "gitgpt.selectRepo",
+        async () => {
+            const choices = workspaceManager.getAvailableRepos();
+            const picked = await vscode.window.showQuickPick(choices, {
+                placeHolder: "選擇 Git 存放庫",
+            });
+            if (picked) {
+                workspaceManager.setSelectedRepo(picked.path);
+            }
+        }
+    );
+
+    context.subscriptions.push(openGitLogViewer, selectRepo);
+
+    // 註冊 LLM 工具
+    context.subscriptions.push(
+        vscode.lm.registerTool("open_git_log_viewer", new OpenGitLogViewerTool()),
+        vscode.lm.registerTool("show_git_log_message", new VisualizeGitLogTool()),
+        vscode.lm.registerTool("select_repo", new SelectRepoTool()),
+        vscode.lm.registerTool("list_repos", new ListReposTool()),
+        vscode.lm.registerTool("get_git_log", new GetGitLogTool())
+    );
+
+    ensureGitHubMcpServerRegistered();
+}
+
+export function deactivate() { }
+
 
 export async function ensureGitHubMcpServerRegistered() {
     const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -95,124 +195,3 @@ export async function ensureGitHubMcpServerRegistered() {
         "GitHub MCP Server 將被加入設定中，請確保你已啟動 Docker 來運行 GitHub MCP Server。"
     );
 }
-
-export function activate(context: vscode.ExtensionContext) {
-    // debug
-    const statusBar = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left,
-        100
-    );
-    statusBar.command = "gitgpt.selectRepo";
-    statusBar.tooltip = "目前使用中的 Git 存放庫";
-    statusBar.text = "$(repo) No Repo";
-    statusBar.show();
-
-    const onRepoChangeCallback = async (repoPath: string | null) => {
-        if (!repoPath) {
-            return;
-        }
-
-        if (WebviewPanel.isVisible()) {
-            const gitLog = await getGitLogText(repoPath);
-            if (gitLog) {
-                WebviewPanel.getInstance().sendMessage({
-                    type: "getGitLog",
-                    payload: {
-                        path: repoPath,
-                        log: gitLog,
-                        afterLog: "",
-                    },
-                });
-            }
-        }
-
-        if (repoPath) {
-            statusBar.text = `$(repo) ${path.basename(repoPath)}`;
-        } else {
-            statusBar.text = "$(repo) No Repo";
-        }
-        statusBar.show();
-    };
-
-    WebviewPanel.init(context);
-    WorkspaceManager.init(onRepoChangeCallback);
-
-    const workspaceManager = WorkspaceManager.getInstance();
-    const webviewPanel = WebviewPanel.getInstance();
-
-    webviewPanel.onDidReceiveMessage((message) => {
-        if (message.type === "switchRepo") {
-            const path = message.payload.path;
-            workspaceManager.setSelectedRepo(path);
-        } else if (message.type === "ready") {
-            webviewPanel.notifyReady();
-        }
-    });
-
-    const openGitLogViewer = vscode.commands.registerCommand(
-        "gitgpt.openGitLogViewer",
-        async () => {
-            try {
-                WebviewPanel.show();
-
-                const webviewPanel = WebviewPanel.getInstance();
-                await webviewPanel.ready();
-
-                const repos = workspaceManager.getAvailableRepos();
-                webviewPanel.sendMessage({
-                    type: "getAvailableRepo",
-                    payload: {
-                        repos: repos.map((repo: any) => ({
-                            label: repo.label,
-                            description: repo.description,
-                            path: repo.path,
-                        })),
-                    },
-                });
-                const path = workspaceManager.getCurrentRepoPath();
-                const gitLog = await getGitLogText(path);
-                if (gitLog) {
-                    webviewPanel.sendMessage({
-                        type: "getGitLog",
-                        payload: {
-                            path: path,
-                            log: gitLog,
-                            afterLog: "",
-                        },
-                    });
-                }
-            } catch (e: any) {
-                vscode.window.showErrorMessage(e);
-                return;
-            }
-        }
-    );
-
-    const selectRepo = vscode.commands.registerCommand(
-        "gitgpt.selectRepo",
-        async () => {
-            const choices = workspaceManager.getAvailableRepos();
-            const picked = await vscode.window.showQuickPick(choices, {
-                placeHolder: "選擇 Git 存放庫",
-            });
-            if (picked) {
-                workspaceManager.setSelectedRepo(picked.path);
-            }
-        }
-    );
-
-    context.subscriptions.push(openGitLogViewer, selectRepo);
-
-    // 註冊 LLM 工具
-    context.subscriptions.push(
-        vscode.lm.registerTool("open_git_log_viewer", new OpenGitLogViewerTool()),
-        vscode.lm.registerTool("show_git_log_message", new VisualizeGitLogTool()),
-        vscode.lm.registerTool("select_repo", new SelectRepoTool()),
-        vscode.lm.registerTool("list_repos", new ListReposTool()),
-        vscode.lm.registerTool("get_git_log", new GetGitLogTool())
-    );
-
-    ensureGitHubMcpServerRegistered();
-}
-
-export function deactivate() { }

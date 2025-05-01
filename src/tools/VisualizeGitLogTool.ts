@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { WebviewPanel } from '../webviewPanel';
+import { WebviewController } from '../webviewController';
 
 interface IVisualizesGitLog {
     before: string;
@@ -26,7 +26,7 @@ export class VisualizeGitLogTool implements vscode.LanguageModelTool<IVisualizes
     }
 
     async invoke(options: vscode.LanguageModelToolInvocationOptions<IVisualizesGitLog>) {
-        WebviewPanel.getInstance().sendMessage({
+        WebviewController.getInstance().sendMessage({
             type: 'getGitLog', "payload": {
                 "path": "__virtual_gitgpt__",
                 "log": options.input.before,

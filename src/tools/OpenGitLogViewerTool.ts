@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { getGitLogText } from "../git";
-import { WebviewPanel } from "../webviewPanel";
+import { WebviewController } from "../webviewController";
 import { WorkspaceManager } from "../WorkspaceManager";
 
 
@@ -12,7 +12,7 @@ export class OpenGitLogViewerTool implements vscode.LanguageModelTool<{}> {
             const path = WorkspaceManager.getInstance().getCurrentRepoPath();
             const gitLog = await getGitLogText(path);
             if (gitLog) {
-                WebviewPanel.getInstance().sendMessage({
+                WebviewController.getInstance().sendMessage({
                     type: 'getGitLog', "payload": {
                         "path": path,
                         "log": gitLog,

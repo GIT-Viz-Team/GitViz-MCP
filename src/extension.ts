@@ -104,7 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
   ensureGitHubMcpServerRegistered();
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 export async function ensureGitHubMcpServerRegistered() {
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;

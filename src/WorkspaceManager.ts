@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
 
 export interface RepoEntry {
   label: string;
@@ -47,6 +46,11 @@ export class WorkspaceManager {
 
     // 當有新的 Git repo 被開啟時註冊變動事件
     this.gitAPI.onDidOpenRepository((repo: any) => {
+      if (this.isAutoMode && !this.currentRepoPath) {
+        this.currentRepoPath = repo.rootUri.fsPath;
+        this.onRepoChangeCallback(this.currentRepoPath);
+      }
+
       // 如果目前是手動模式，且當前 repo 是選定的 repo，就更新狀態列
       repo.state.onDidChange(() => {
         if (!this.isAutoMode && this.currentRepoPath === repo.rootUri.fsPath) {

@@ -46,10 +46,7 @@ export class WorkspaceManager {
 
     // 當有新的 Git repo 被開啟時註冊變動事件
     this.gitAPI.onDidOpenRepository((repo: any) => {
-      if (this.isAutoMode && !this.currentRepoPath) {
-        this.currentRepoPath = repo.rootUri.fsPath;
-        this.onRepoChangeCallback(this.currentRepoPath);
-      }
+      console.log(`onDidOpenRepository: ${repo.rootUri.fsPath}`)
 
       // 如果目前是手動模式，且當前 repo 是選定的 repo，就更新狀態列
       repo.state.onDidChange(() => {
@@ -58,19 +55,23 @@ export class WorkspaceManager {
         }
       });
 
-      // 檢查目前編輯的檔案是否屬於新開啟的 repo，是的話立刻更新
-      const editor = vscode.window.activeTextEditor;
-      const uri = editor?.document?.uri;
-      if (uri && uri.fsPath.startsWith(repo.rootUri.fsPath)) {
-        this.updateStatus(repo.rootUri.fsPath);
-      }
-    });
+      const isSubPath = (filePath: string, basePath: string): boolean => {
+        const rel = path.relative(basePath, filePath);
+        return !!rel && !rel.startsWith("..") && !path.isAbsolute(rel);
+      };
 
-    // 初始化：根據目前的開啟檔案更新狀態
-    const activeUri = vscode.window.activeTextEditor?.document?.uri;
-    if (activeUri) {
-      this.updateStatusAuto(activeUri);
-    }
+      // 初始化 currentRepoPath
+      const uri = vscode.window.activeTextEditor?.document?.uri;
+      if (!uri && !this.currentRepoPath) {
+        // 如果沒有開啟檔案，default 設置為第一個 git repo
+        this.updateStatus(repo.rootUri.fsPath);
+      } else if (uri && isSubPath(uri.fsPath, repo.rootUri.fsPath)) {
+        const detectedRepo = this.gitAPI.getRepository(uri);
+        const finalRepoPath = detectedRepo?.rootUri?.fsPath ?? repo.rootUri.fsPath;
+        this.updateStatus(finalRepoPath);
+      }
+
+    });
 
     // 使用者切換編輯器時，在自動模式下更新狀態列
     vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -90,6 +91,13 @@ export class WorkspaceManager {
     if (!WorkspaceManager.instance) {
       WorkspaceManager.instance = new WorkspaceManager(onRepoChange);
     }
+  }
+
+  /**
+   * 取得 GitAPI
+   */
+  public getGitAPI(): any {
+    return this.gitAPI;
   }
 
   /**

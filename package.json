@@ -23,40 +23,19 @@
         "displayName": "Get Git Log",
         "toolReferenceName": "getGitLog",
         "canBeReferencedInPrompt": true,
-        "userDescription": "Fetches the git log output in a format",
-        "modelDescription": "This tool retrieves the git log for the current workspace in a predefined format, which can then be visualized by Git Log Viewer. The log is formatted using the Git command: `git log --all --pretty=format:\"%h (%an) (%ar) (%s) %d [%p]\"`. This tool is essential for fetching the current git history before visualizing or manipulating it in Git Log Viewer."
-      },
-      {
-        "name": "select_repo",
-        "displayName": "Select Git Repository",
-        "toolReferenceName": "selectRepo",
-        "canBeReferencedInPrompt": true,
-        "userDescription": "Select the current Git repository by absolute path, or choose automatic or virtual mode.",
-        "modelDescription": "Selects the Git repository for GitGPT operations. You can:\n\n- Provide an absolute path to a Git repository folder (e.g., \"/home/user/project\") to operate on the actual project.\n- Use '__auto__' to let the system automatically select a repository based on the currently active file.\n- Use '__virtual_gitgpt__' to activate a virtual agent repository. This acts as a blank canvas with an empty git log history, useful when the model wants to demonstrate Git concepts or simulate git log changes that are not tied to a real project.\n\nTo find valid real repositories, call the 'list_repos' tool to get available paths.",
+        "userDescription": "Fetches the git log output for a file path.",
+        "modelDescription": "This tool retrieves the git log for a file path by resolving its repository. Each commit includes the short hash (%h), author name (%an), relative date (%ar), commit message (%s), references/tags (%d), and parent hashes (%p). Example output:\n\n`a1b2c3d (Alice) (3 days ago) (Initial commit)  (HEAD -> main) []`\n\nUse this tool whenever you need to fetch or analyze the git commit history of any file or folder.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "path": {
               "type": "string",
-              "description": "Absolute path to the Git repository, or '__auto__' for automatic, or '__virtual_gitgpt__' for a blank canvas"
+              "description": "The file or folder path to trace the Git repository from."
             }
           },
           "required": [
             "path"
           ]
-        }
-      },
-      {
-        "name": "list_repos",
-        "displayName": "List Git Repositories",
-        "toolReferenceName": "listRepos",
-        "canBeReferencedInPrompt": true,
-        "userDescription": "List all available Git repositories including auto and virtual modes.",
-        "modelDescription": "Returns the list of available Git repositories that can be selected using the select_repo tool. Includes actual repositories, automatic mode, and virtual repository options.",
-        "inputSchema": {
-          "type": "object",
-          "properties": {},
-          "required": []
         }
       },
       {
@@ -71,23 +50,23 @@
         "name": "visualize_git_log",
         "displayName": "Visualize Git Log",
         "toolReferenceName": "visualizeGitLog",
-        "canBeReferencedInPrompt": false,
-        "modelDescription": "This tool allows you to visualize the changes in the git log after executing a git command. It is particularly useful for demonstrating the effect of git operations (e.g., merging branches, rebasing) and for helping users understand how their git history will evolve. To use this tool, provide two git logs:\n\n1. **Before**: The git log of the repository prior to the operation.\n2. **After**: The simulated git log after the operation has been performed.\n\nIf the intent is to show the effects of a git command on the user's repository, use the current log (using the `get_git_log` tool to get the current state) as the `before` state, and simulate the expected changes for the `after` state. If the git operation is independent of the current repository state, you can manually simulate both the `before` and `after` logs.\n\nGit log format: `git log --all --pretty=format:\"%h (%an) (%ar) (%s) %d [%p]\"`",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "This tool is used to visualize how the Git history changes after a specific Git operation(e.g., merge, rebase, cherry-pick). It helps illustrate the structural differences between the commit tree before and after the operation.\n\nTo use this tool, provide two Git log histories:\n\n- `beforeOperationLog`: Git history before the operation. This can be obtained using the `get_git_log` tool, or it can be generated manually.\n\n- `afterOperationLog`: Git history after the operation, including the commits from `beforeOperationLog` plus any new or rewritten commits.\n\nEach commit should follow the format: short hash (%h) which must be a hexadecimal string containing only [0-9a-f], author name (%an), relative date (%ar), commit message (%s), references/tags (%d), and parent hashes (%p).\n\nExample:\n\nbeforeOperationLog:\n76ddb32 (Alice) (2 weeks ago) (Initial commit)  []\n\nafterOperationLog:\n1f4a8f3 (Jimmy) (11 days ago) (feat: add api)  [76ddb32]\n76ddb32 (Alice) (2 weeks ago) (Initial commit)  []\n\nUse this tool to help users understand how a Git operation transform the commit tree.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "before": {
+            "beforeOperationLog": {
               "type": "string",
-              "description": "The git log of the repository prior to the operation."
+              "description": "The Git log history before performing the operation. This can be obtained using the get_git_log tool on a real file path, or generated by the model to illustrate a hypothetical pre-operation state."
             },
-            "after": {
+            "afterOperationLog": {
               "type": "string",
-              "description": "The simulated git log after the operation has been performed."
+              "description": "The Git log history after simulating or applying the Git operation. Must follow the same format as beforeOperationLog."
             }
           },
           "required": [
-            "before",
-            "after"
+            "beforeOperationLog",
+            "afterOperationLog"
           ]
         }
       }

@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 import { WebviewController } from '../webviewController';
+import { VirtualRepoStateManager } from '../VirtualRepoStateManager'
+import { WorkspaceManager } from "../WorkspaceManager";
 
 interface IVisualizesGitLog {
-    before: string;
-    after: string;
+    beforeOperationLog: string;
+    afterOperationLog: string;
 }
 
 export class VisualizeGitLogTool implements vscode.LanguageModelTool<IVisualizesGitLog> {
@@ -13,29 +15,41 @@ export class VisualizeGitLogTool implements vscode.LanguageModelTool<IVisualizes
 
     async prepareInvocation(options: vscode.LanguageModelToolInvocationPrepareOptions<IVisualizesGitLog>) {
         return {
-            invocationMessage: 'Visualizing mock Git log in Git Log Viewer',
             confirmationMessages: {
-                title: 'Visualize Git Log Tree (AI-generated)',
+                title: 'Visualize Git Log Tree',
                 message: new vscode.MarkdownString(
-                    `
-                    Git Log (before):\n\n\`${options.input.before}\`
-                    Git Log (after):\n\n\`${options.input.after}\`
-                    `)
-            }
+                    `The following Git commit logs will be visualized as a tree:\n\n---\n\n` +
+                    `**Before Operation:**\n\n\`\`\`text\n${options.input.beforeOperationLog}\n\`\`\`\n\n` +
+                    `**After Operation:**\n\n\`\`\`text\n${options.input.afterOperationLog}\n\`\`\``
+                )
+            },
+            invocationMessage: 'Visualizing Git log in Git Log Viewer'
         };
     }
 
     async invoke(options: vscode.LanguageModelToolInvocationOptions<IVisualizesGitLog>) {
+
+        await WebviewController.getInstance().createPanel();
+
+        const repos = WorkspaceManager.getInstance().getAvailableRepos();
         WebviewController.getInstance().sendMessage({
-            type: 'getGitLog', "payload": {
-                "path": "__virtual_gitgpt__",
-                "log": options.input.before,
-                "afterLog": options.input.after
-            }
+            type: "getAvailableRepo",
+            payload: {
+                repos: repos.map((repo: any) => ({
+                    label: repo.label,
+                    description: repo.description,
+                    path: repo.path,
+                })),
+            },
         });
 
+        VirtualRepoStateManager.getInstance().setLogs(options.input.beforeOperationLog, options.input.afterOperationLog);
+
         return new vscode.LanguageModelToolResult([
-            new vscode.LanguageModelTextPart(`Visualized AI-generated Git log in the Git Log Viewer.`)
+            new vscode.LanguageModelTextPart(`Visualized log in the Git Log Viewer.`)
         ]);
     }
 }
+
+
+

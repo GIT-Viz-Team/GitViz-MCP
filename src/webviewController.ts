@@ -104,6 +104,17 @@ export class WebviewController {
         });
     }
 
+    public isVisible(): boolean {
+        return !!this._panel && this._panel.visible;
+    }
+
+    public disposePanel(): void {
+        if (this._panel) {
+            this._panel.dispose(); // 將觸發 onDidDispose -> 清除 this._panel
+            this._panel = null;
+        }
+    }
+
     /**
      * 當視圖狀態變更時，發射 onDidChangeViewState 事件。
      */

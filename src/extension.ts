@@ -55,6 +55,11 @@ export function activate(context: vscode.ExtensionContext) {
         "gitgpt.openGitLogViewer",
         async () => {
             try {
+                if (webviewController.isVisible()) {
+                    webviewController.disposePanel(); // toggle off
+                    return;
+                }
+
                 await webviewController.createPanel();
 
                 const repos = workspaceManager.getAvailableRepos();

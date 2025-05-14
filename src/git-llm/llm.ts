@@ -14,7 +14,7 @@ export default class LLM {
     const response = await axios.post(`${API_ENDPOINT}/call-llm`, {
       messages,
       temperature: options.temperature || 1.0,
-      toolUse
+      toolUse,
     });
 
     return response.data;
@@ -22,7 +22,7 @@ export default class LLM {
 
   async securityCheck(command: string): Promise<boolean> {
     const response = await axios.post(`${API_ENDPOINT}/security-check`, {
-      command
+      command,
     });
     return response.data.is_safe;
   }

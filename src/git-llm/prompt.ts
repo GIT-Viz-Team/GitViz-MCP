@@ -63,42 +63,42 @@ ask_user("請選擇操作類型", ["1. 合併", "2. rebase", "3. 解決衝突", 
 
 export const TOOLS_PROMPT = [
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "ask_user",
-      description: "跟使用者互動，得知使用者的需求",
+      name: 'ask_user',
+      description: '跟使用者互動，得知使用者的需求',
       parameters: {
-        type: "object",
+        type: 'object',
         properties: {
           message: {
-            type: "string",
-            description: "問題內容",
+            type: 'string',
+            description: '問題內容',
           },
           options: {
-            type: "array",
+            type: 'array',
             description: "選項，例如：['Y', 'N']，若為空則為簡答",
             items: {
-              type: "string",
+              type: 'string',
             },
           },
-          required: ["message"],
+          required: ['message'],
         },
       },
     },
   },
   {
-    type: "function",
+    type: 'function',
     function: {
-      name: "execute_command",
-      description: "執行指令",
+      name: 'execute_command',
+      description: '執行指令',
       parameters: {
-        type: "object",
+        type: 'object',
         properties: {
           command: {
-            type: "string",
-            description: "要執行的指令",
+            type: 'string',
+            description: '要執行的指令',
           },
-          required: ["command"],
+          required: ['command'],
         },
       },
     },

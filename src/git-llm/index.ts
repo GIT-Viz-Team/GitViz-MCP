@@ -1,9 +1,9 @@
-import { config } from "dotenv";
-import { WebviewPanel } from "../webviewController";
-import { Message } from "./types";
-import { runCommandCompose } from "./utils";
-import LLM from "./llm";
-import { GITGPT_PROMPT } from "./prompt";
+import { config } from 'dotenv';
+import { WebviewPanel } from '../webviewController';
+import { Message } from './types';
+import { runCommandCompose } from './utils';
+import LLM from './llm';
+import { GITGPT_PROMPT } from './prompt';
 
 config();
 
@@ -21,8 +21,8 @@ class LLM_Message {
 
   constructor(task: string) {
     this.messages = [];
-    this.addMessage("system", GITGPT_PROMPT);
-    this.addMessage("user", this.taskToMessages(task));
+    this.addMessage('system', GITGPT_PROMPT);
+    this.addMessage('user', this.taskToMessages(task));
   }
 
   private taskToMessages(task: string): string {
@@ -30,15 +30,15 @@ class LLM_Message {
   }
 
   addMessage(
-    role: Message["role"],
-    content: Message["content"] = "",
+    role: Message['role'],
+    content: Message['content'] = '',
     toolId?: string,
     functionName?: string,
     toolCalls?: ToolCall[]
   ) {
     if (toolId) {
       this.messages.push({
-        role: "tool",
+        role: 'tool',
         content,
         name: functionName,
         tool_call_id: toolId,
@@ -71,10 +71,10 @@ class Flow {
     if (await this.llm.securityCheck(command)) {
       const yn = await this.askUser(
         `你要執行這個可能無法恢復的指令嗎？\n${command}`,
-        ["Y", "N"]
+        ['Y', 'N']
       );
-      if (yn?.trim().toLowerCase() !== "y") {
-        return "Command is non-secure and user declined to execute.";
+      if (yn?.trim().toLowerCase() !== 'y') {
+        return 'Command is non-secure and user declined to execute.';
       }
     }
     const res = await runCommandCompose(command, this.path);
@@ -86,12 +86,12 @@ class Flow {
   private askUser(message: string, options: string[]): Promise<any> {
     return new Promise((resolve) => {
       const messageId = Math.random().toString(36).substring(7);
-      const messageToSend = { type: "ask_user", message, options, messageId };
+      const messageToSend = { type: 'ask_user', message, options, messageId };
 
       this.panel.sendMessage(messageToSend);
 
       const disposable = this.panel.onDidReceiveMessage((message) => {
-        if (message.type === "ask_user_response" && message.id === messageId) {
+        if (message.type === 'ask_user_response' && message.id === messageId) {
           disposable.dispose();
           resolve(message.answer);
         }
@@ -100,16 +100,20 @@ class Flow {
   }
 
   private getGitLog(): Promise<string> {
-    return runCommandCompose("git log --all --format=format:'%h (%an) (%ar) (%s) %d [%p]'", this.path, true);
+    return runCommandCompose(
+      "git log --all --format=format:'%h (%an) (%ar) (%s) %d [%p]'",
+      this.path,
+      true
+    );
   }
 
   private async sendGitLog(): Promise<void> {
     const gitLog = await this.getGitLog();
-    this.panel.sendMessage({ type: "git_log", gitLog });
+    this.panel.sendMessage({ type: 'git_log', gitLog });
   }
 
   private sendToPanel(message: string): void {
-    this.panel.sendMessage({ type: "message", message });
+    this.panel.sendMessage({ type: 'message', message });
   }
 
   private async callLLM(): Promise<any> {
@@ -136,12 +140,12 @@ class Flow {
           arguments: toolCall.function.arguments,
         },
         id: toolCall.id,
-        type: "function",
+        type: 'function',
       }));
 
       this.llmMessages.addMessage(
         llmOutput.role,
-        "",
+        '',
         undefined,
         undefined,
         resToolCalls
@@ -177,7 +181,7 @@ class Flow {
       this.sendGitLog();
 
       if (!isContinue) {
-        this.sendToPanel("流程結束。");
+        this.sendToPanel('流程結束。');
         break;
       }
     }

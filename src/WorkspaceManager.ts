@@ -26,22 +26,24 @@ export class WorkspaceManager {
     // VSCode Git API 實例，用來存取已開啟的 Git repository
     private gitAPI: any;
 
-    private onRepoChangeCallback: (repoPath: string | null) => void;
-
     private virtualRepoManager: VirtualRepoStateManager;
     private readonly virtualRepoLabel = "[Virtual] GitGPT Agent";
+
+    private readonly _onRepoChanged = new vscode.EventEmitter<string | null>();
+    private readonly _onRepoRegistered = new vscode.EventEmitter<string>();
+    public readonly onRepoChanged = this._onRepoChanged.event;
+    public readonly onRepoRegistered = this._onRepoRegistered.event;
 
     /**
      * 建構子 - 初始化 Git API、註冊 repo 事件、根據目前檔案選擇 repo
      * @param onRepoChange 當 repo 發生變化時觸發的 callback
      */
-    private constructor(onRepoChange: (repoPath: string | null) => void) {
-        this.onRepoChangeCallback = onRepoChange;
-
+    private constructor() {
         // 當 virtualRepo 狀態改變時，通知外部
         this.virtualRepoManager = VirtualRepoStateManager.getInstance();
+
         this.virtualRepoManager.onChange(() => {
-            this.onRepoChangeCallback(VIRTUAL_REPO_PATH);
+            this._onRepoChanged.fire(VIRTUAL_REPO_PATH);
         });
 
         // 取得 Git 擴充功能的 API
@@ -57,6 +59,8 @@ export class WorkspaceManager {
         // 當有新的 Git repo 被開啟時註冊變動事件
         this.gitAPI.onDidOpenRepository((repo: any) => {
             console.log(`onDidOpenRepository: ${repo.rootUri.fsPath}`);
+
+            this._onRepoRegistered.fire(repo.rootUri.fsPath);
 
             // 如果目前是手動模式，且當前 repo 是選定的 repo，就更新狀態列
             repo.state.onDidChange(() => {
@@ -100,9 +104,9 @@ export class WorkspaceManager {
      * 初始化 Singleton 實例
      * @param onRepoChange repo 切換時要觸發的 callback
      */
-    public static init(onRepoChange: (repoPath: string | null) => void) {
+    public static init() {
         if (!WorkspaceManager.instance) {
-            WorkspaceManager.instance = new WorkspaceManager(onRepoChange);
+            WorkspaceManager.instance = new WorkspaceManager();
         }
     }
 
@@ -141,7 +145,7 @@ export class WorkspaceManager {
      */
     public updateStatus(repoPath: string) {
         this.currentRepoPath = repoPath;
-        this.onRepoChangeCallback(this.currentRepoPath);
+        this._onRepoChanged.fire(this.currentRepoPath);
     }
 
     /**
@@ -149,9 +153,8 @@ export class WorkspaceManager {
      * @param fileUri 使用者當前開啟的檔案 uri
      */
     public updateStatusAuto(fileUri: vscode.Uri) {
-        if (!this.isAutoMode) {
-            return;
-        }
+        if (!this.isAutoMode) return;
+
         const repo = this.gitAPI.getRepository(fileUri);
 
         // 僅當有偵測到 repo 時才更新

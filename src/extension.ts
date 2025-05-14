@@ -16,7 +16,14 @@ export function activate(context: vscode.ExtensionContext) {
     // statusBar.text = "$(repo) Git: (none)";
     // statusBar.show();
 
-    const onRepoChangeCallback = async (repoPath: string | null) => {
+    VirtualRepoStateManager.init();
+    WebviewController.init(context);
+    WorkspaceManager.init();
+
+    const workspaceManager = WorkspaceManager.getInstance();
+    const webviewController = WebviewController.getInstance();
+
+    workspaceManager.onRepoChanged(async (repoPath) => {
         if (!repoPath) {
             return;
         }
@@ -35,14 +42,22 @@ export function activate(context: vscode.ExtensionContext) {
                 afterLog: logs.after,
             },
         });
-    };
+    });
 
-    VirtualRepoStateManager.init();
-    WebviewController.init(context);
-    WorkspaceManager.init(onRepoChangeCallback);
+    workspaceManager.onRepoRegistered((repoPath) => {
+        const repos = workspaceManager.getAvailableRepos();
 
-    const workspaceManager = WorkspaceManager.getInstance();
-    const webviewController = WebviewController.getInstance();
+        webviewController.sendMessage({
+            type: "getAvailableRepo",
+            payload: {
+                repos: repos.map((repo: any) => ({
+                    label: repo.label,
+                    description: repo.description,
+                    path: repo.path,
+                })),
+            },
+        });
+    });
 
     webviewController.onDidReceiveMessage((message) => {
         if (message.type === "switchRepo") {

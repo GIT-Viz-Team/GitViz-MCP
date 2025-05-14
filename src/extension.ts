@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WebviewController } from './webviewController';
+import { WebviewController } from './WebviewController';
 import * as path from 'path';
 import * as fs from 'fs';
 import { WorkspaceManager } from './WorkspaceManager';
@@ -32,7 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
     // statusBar.text = `$(repo) Git: ${shortName}`;
 
     const logs = await resolveEffectiveGitLogs(repoPath);
-    if (!logs) return;
+    if (!logs) {
+      return;
+    }
 
     WebviewController.getInstance().sendMessage({
       type: 'getGitLog',
@@ -92,7 +94,9 @@ export function activate(context: vscode.ExtensionContext) {
         const repoPath = workspaceManager.getCurrentRepoPath();
 
         const logs = await resolveEffectiveGitLogs(repoPath);
-        if (!logs) return;
+        if (!logs) {
+          return;
+        }
 
         WebviewController.getInstance().sendMessage({
           type: 'getGitLog',
@@ -196,6 +200,7 @@ export async function ensureGitHubMcpServerRegistered() {
           'ghcr.io/github/github-mcp-server',
         ],
         env: {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           GITHUB_PERSONAL_ACCESS_TOKEN: '${input:github_token}',
         },
       },

@@ -3,17 +3,6 @@
  * 它記錄操作前與操作後的 Git log 並允許外部訂閱變更事件。
  */
 
-const test = `
-#visualizeGitLog
-
-beforeOperationLog:
-76ddb32 (wei) (2 weeks ago) (feat: add api)  []
-
-afterOperationLog:
-1f4a8f3 (jimmyhealer) (11 days ago) (feat: integrate extension  and enhance Git log handling)  [76ddb32]
-76ddb32 (wei) (2 weeks ago) (feat: add api)  []
-`;
-
 export class VirtualRepoStateManager {
   private static instance: VirtualRepoStateManager;
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WebviewController } from '../webviewController';
+import { WebviewController } from '../WebviewController';
 import { VirtualRepoStateManager } from '../VirtualRepoStateManager';
 import { WorkspaceManager } from '../WorkspaceManager';
 

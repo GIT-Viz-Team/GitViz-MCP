@@ -215,7 +215,9 @@ export class GitVisualizer {
       // 為每組分配 x 座標
       for (const [parentId, groupNodes] of parentGroups.entries()) {
         const parent = nodes.find((n) => n.id === parentId);
-        if (!parent) continue;
+        if (!parent) {
+          continue;
+        }
         const k = groupNodes.length;
         if (k === 1) {
           // 單一子節點對齊父節點
@@ -280,9 +282,12 @@ export class GitVisualizer {
       .attr('transform', (d) => {
         // 新增節點從父節點舊位置或自身位置進入
         let start = oldPos.get(d.id);
-        if (!start && d.parents && d.parents.length)
+        if (!start && d.parents && d.parents.length) {
           start = oldPos.get(d.parents[0]);
-        if (!start) start = { x: d.x, y: d.y };
+        }
+        if (!start) {
+          start = { x: d.x, y: d.y };
+        }
         return `translate(${start.x},${start.y})`;
       })
       .style('opacity', 0)
@@ -453,8 +458,11 @@ export class GitVisualizer {
       // 顏色設定
       let bgColor = '#10b981',
         textColor = '#fff';
-      if (d.ref.includes('tag')) bgColor = '#f59e0b';
-      else if (d.ref === 'HEAD') bgColor = '#3b82f6';
+      if (d.ref.includes('tag')) {
+        bgColor = '#f59e0b';
+      } else if (d.ref === 'HEAD') {
+        bgColor = '#3b82f6';
+      }
       const text = g
         .append('text')
         .attr('x', 0)

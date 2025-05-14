@@ -149,7 +149,9 @@ export class WorkspaceManager {
    * @param fileUri 使用者當前開啟的檔案 uri
    */
   public updateStatusAuto(fileUri: vscode.Uri) {
-    if (!this.isAutoMode) return;
+    if (!this.isAutoMode) {
+      return;
+    }
 
     const repo = this.gitAPI.getRepository(fileUri);
 

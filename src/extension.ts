@@ -129,7 +129,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.lm.registerTool('get_git_log', new GetGitLogTool())
   );
 
-  ensureGitHubMcpServerRegistered();
+  //   ensureGitHubMcpServerRegistered();
 }
 
 export function deactivate() {}

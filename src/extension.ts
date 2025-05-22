@@ -11,11 +11,6 @@ import { resolveEffectiveGitLogs } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 
 export function activate(context: vscode.ExtensionContext) {
-  // const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-  // statusBar.tooltip = "Current Git Repository";
-  // statusBar.text = "$(repo) Git: (none)";
-  // statusBar.show();
-
   VirtualRepoStateManager.init();
   WebviewController.init(context);
   WorkspaceManager.init();

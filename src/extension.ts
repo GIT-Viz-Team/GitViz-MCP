@@ -8,7 +8,7 @@ import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
 import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
 import { HightlightCommitTool } from './tools/HighlightCommitTool';
 import { GetGitLogTool } from './tools/GetGitLogTool';
-import { resolveEffectiveGitLogs } from './git';
+import { resolveEffectiveGitLogs, checkoutVersion } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -57,10 +57,15 @@ export function activate(context: vscode.ExtensionContext) {
     });
   });
 
-  webviewController.onDidReceiveMessage((message) => {
+  webviewController.onDidReceiveMessage(async (message) => {
     if (message.type === 'switchRepo') {
       const path = message.payload.path;
       workspaceManager.setSelectedRepo(path);
+    } else if (message.type === 'checkout') {
+      const hash = message.payload.hash;
+      const path = workspaceManager.getCurrentRepoPath();
+
+      checkoutVersion(hash, path);
     }
   });
 

@@ -58,3 +58,29 @@ export async function resolveEffectiveGitLogs(
     after: '',
   };
 }
+
+/**
+ * 執行 Git checkout 切換到指定提交版本：
+ * - 若 repoPath 是有效 git repository，執行 `git checkout <hash>`
+ * - 若路徑非 git repository，顯示錯誤訊息
+ * - 其他 git 錯誤會捕捉並顯示對應訊息
+ *
+ * @param hash 要切換的 Git commit hash (例: a1b2c3d)
+ * @param repoPath git repository 的實體路徑
+ * @returns 成功時回傳 git 指令的 stdout 輸出，失敗時回傳 void
+ */
+export async function checkoutVersion(hash: string, repoPath: string) {
+  try {
+    const { stdout } = await exec(`git checkout ${hash}`, { cwd: repoPath });
+    return stdout;
+  } catch (err: any) {
+    if (err.message.includes('fatal: not a git repository')) {
+      vscode.window.showErrorMessage(
+        `Not a git repository: .git directory not found in ${repoPath}`
+      );
+    } else {
+      vscode.window.showErrorMessage(err.stderr ?? 'Git error');
+    }
+    return;
+  }
+}

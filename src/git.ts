@@ -18,20 +18,6 @@ const exec = promisify(execCb);
 export async function getRawGitLogFromRepo(
   repoPath: string
 ): Promise<string | undefined> {
-  const gitFolder = path.join(repoPath, '.git');
-
-  if (!fs.existsSync(gitFolder)) {
-    vscode.window.showErrorMessage(`.git directory not found in ${repoPath}`);
-    return;
-  }
-
-  try {
-    await exec('git --version');
-  } catch {
-    vscode.window.showErrorMessage('Git is not installed.');
-    return;
-  }
-
   try {
     const { stdout } = await exec(
       'git log -n 30 --all --pretty=format:"%h (%an) (%ar) (%s) %d [%p]"',
@@ -39,7 +25,13 @@ export async function getRawGitLogFromRepo(
     );
     return stdout;
   } catch (err: any) {
-    vscode.window.showErrorMessage(err.stderr ?? 'Git error');
+    if (err.message.includes('fatal: not a git repository')) {
+      vscode.window.showErrorMessage(
+        `Not a git repository: .git directory not found in ${repoPath}`
+      );
+    } else {
+      vscode.window.showErrorMessage(err.stderr ?? 'Git error');
+    }
     return;
   }
 }

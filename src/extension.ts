@@ -6,6 +6,7 @@ import { WorkspaceManager } from './WorkspaceManager';
 import { SelectRepoTool, ListReposTool } from './tools/SelectRepoTool';
 import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
 import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
+import { HightlightCommitTool } from './tools/HighlightCommitTool';
 import { GetGitLogTool } from './tools/GetGitLog';
 import { resolveEffectiveGitLogs } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
@@ -126,7 +127,8 @@ export function activate(context: vscode.ExtensionContext) {
   // 註冊 LLM 工具
   context.subscriptions.push(
     vscode.lm.registerTool('visualize_git_log', new VisualizeGitLogTool()),
-    vscode.lm.registerTool('get_git_log', new GetGitLogTool())
+    vscode.lm.registerTool('get_git_log', new GetGitLogTool()),
+    vscode.lm.registerTool('highlight_commit', new HightlightCommitTool())
   );
 
   //   ensureGitHubMcpServerRegistered();

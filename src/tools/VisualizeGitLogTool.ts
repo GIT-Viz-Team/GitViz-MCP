@@ -58,7 +58,7 @@ export class VisualizeGitLogTool
     );
 
     if (!webviewController.isVisible()) {
-      await vscode.commands.executeCommand('gitgpt.openGitLogViewer');
+      await webviewController.createPanel();
     }
     
     workspaceManager.setSelectedRepo(VIRTUAL_REPO_PATH);

@@ -1,16 +1,17 @@
 import * as vscode from 'vscode';
 import { WebviewController } from './WebviewController';
-import * as path from 'path';
-import * as fs from 'fs';
 import { WorkspaceManager } from './WorkspaceManager';
-import { SelectRepoTool, ListReposTool } from './tools/SelectRepoTool';
-import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
-import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
-import { HighlightCommitTool } from './tools/HighlightCommitTool';
-import { GetGitLogTool } from './tools/GetGitLogTool';
+import {
+  GetGitLogTool,
+  VisualizeGitLogTool,
+  HighlightCommitTool,
+} from './languageModelTools';
 import { resolveEffectiveGitLogs, checkoutVersion } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 import { McpServerManager } from './server/McpServerManager';
+import { registerGitVizToVsCode } from './commands/registerGitViz';
+import { registerSelectRepo } from './commands/selectRepo';
+import { registerOpenGitLogViewer } from './commands/openGitLogViewer';
 
 export function activate(context: vscode.ExtensionContext) {
   VirtualRepoStateManager.init();
@@ -72,65 +73,17 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  const openGitLogViewer = vscode.commands.registerCommand(
-    'gitgpt.openGitLogViewer',
-    async () => {
-      try {
-        if (webviewController.isVisible()) {
-          webviewController.disposePanel(); // toggle off
-          return;
-        }
-
-        await webviewController.createPanel();
-
-        const repos = workspaceManager.getAvailableRepos();
-        webviewController.sendMessage({
-          type: 'getAvailableRepo',
-          payload: {
-            repos: repos.map((repo: any) => ({
-              label: repo.label,
-              description: repo.description,
-              path: repo.path,
-            })),
-          },
-        });
-
-        const repoPath = workspaceManager.getCurrentRepoPath();
-
-        const logs = await resolveEffectiveGitLogs(repoPath);
-        if (!logs) {
-          return;
-        }
-
-        WebviewController.getInstance().sendMessage({
-          type: 'getGitLog',
-          payload: {
-            path: repoPath,
-            beforeOperationLog: logs.before,
-            afterOperationLog: logs.after,
-          },
-        });
-      } catch (e: any) {
-        vscode.window.showErrorMessage(e);
-        return;
-      }
-    }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'gitVizMcp.registerCopilot',
+      registerGitVizToVsCode
+    ),
+    vscode.commands.registerCommand('gitVizMcp.selectRepo', registerSelectRepo),
+    vscode.commands.registerCommand(
+      'gitVizMcp.openGitLogViewer',
+      registerOpenGitLogViewer
+    )
   );
-
-  const selectRepo = vscode.commands.registerCommand(
-    'gitgpt.selectRepo',
-    async () => {
-      const choices = workspaceManager.getAvailableRepos();
-      const picked = await vscode.window.showQuickPick(choices, {
-        placeHolder: '選擇 Git 存放庫',
-      });
-      if (picked) {
-        workspaceManager.setSelectedRepo(picked.path);
-      }
-    }
-  );
-
-  context.subscriptions.push(openGitLogViewer, selectRepo);
 
   mcpServerManager.start();
 
@@ -140,96 +93,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.lm.registerTool('get_git_log', new GetGitLogTool()),
     vscode.lm.registerTool('highlight_commit', new HighlightCommitTool())
   );
-
-  //   ensureGitHubMcpServerRegistered();
 }
 
 export function deactivate() {}
-
-export async function ensureGitHubMcpServerRegistered() {
-  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspacePath) {
-    return;
-  }
-  const vscodeFolder = path.join(workspacePath, '.vscode');
-  const mcpPath = path.join(vscodeFolder, 'mcp.json');
-
-  let currentConfig: any = {};
-  if (fs.existsSync(mcpPath)) {
-    try {
-      const raw = fs.readFileSync(mcpPath, 'utf8');
-      currentConfig = JSON.parse(raw);
-    } catch (e) {
-      vscode.window.showErrorMessage(
-        '無法解析 .vscode/mcp.json，請確認其內容是否正確 JSON 格式'
-      );
-      return;
-    }
-
-    if (currentConfig.servers?.github) {
-      // 已有 github server，不覆蓋
-      return;
-    }
-  }
-
-  // 詢問是否加入 GitHub MCP server
-  const userChoice = await vscode.window.showInformationMessage(
-    '是否要加入 GitHub 官方 MCP Server？',
-    '加入',
-    '略過'
-  );
-
-  if (userChoice !== '加入') {
-    return;
-  }
-
-  const githubServerConfig = {
-    inputs: [
-      {
-        type: 'promptString',
-        id: 'github_token',
-        description: 'GitHub Personal Access Token',
-        password: true,
-      },
-    ],
-    servers: {
-      github: {
-        command: 'docker',
-        args: [
-          'run',
-          '-i',
-          '--rm',
-          '-e',
-          'GITHUB_PERSONAL_ACCESS_TOKEN',
-          'ghcr.io/github/github-mcp-server',
-        ],
-        env: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          GITHUB_PERSONAL_ACCESS_TOKEN: '${input:github_token}',
-        },
-      },
-    },
-  };
-
-  const updatedConfig = {
-    inputs: currentConfig.inputs ?? [
-      {
-        type: 'promptString',
-        id: 'github_token',
-        description: 'GitHub Personal Access Token',
-        password: true,
-      },
-    ],
-    servers: {
-      ...currentConfig.servers,
-      github: githubServerConfig,
-    },
-  };
-
-  fs.mkdirSync(vscodeFolder, { recursive: true });
-  fs.writeFileSync(mcpPath, JSON.stringify(updatedConfig, null, 2), 'utf8');
-
-  vscode.window.showInformationMessage(
-    'GitHub MCP Server 將被加入設定中，請確保你已啟動 Docker 來運行 GitHub MCP Server。'
-  );
-}

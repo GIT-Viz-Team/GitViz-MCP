@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { VIRTUAL_REPO_PATH } from './common/constants';
+import { VIRTUAL_REPO_PATH } from './constants';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 
 export interface RepoEntry {

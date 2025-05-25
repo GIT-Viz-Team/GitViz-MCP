@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { exec as execCb } from 'child_process';
-import { VIRTUAL_REPO_PATH } from './common/constants';
+import { VIRTUAL_REPO_PATH } from './constants';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 
 const exec = promisify(execCb);

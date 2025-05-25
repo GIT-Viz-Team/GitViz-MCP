@@ -3,9 +3,9 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { registerTools } from './tools';
+import { registerTools } from './mcpTools';
 import { handleSseConnection, handleMessagePost } from './sseHandlers';
-import { DEFAULT_CONFIG, getProjectBasePath } from './config';
+import { readConfig } from '../config';
 
 /**
  * 單例管理 MCP Server 與 HTTP 服務。
@@ -52,11 +52,13 @@ export class McpServerManager {
    * 啟動 MCP Server 與 HTTP 服務。
    */
   public start(): void {
-    const config = DEFAULT_CONFIG;
+    const config = readConfig();
+    const basePath = config.basePath;
+    const port = config.port;
 
     // 初始化 MCP 伺服器
     this.mcpServer = new McpServer({
-      name: 'Math Tools Server',
+      name: 'Git Visualize Server',
       version: '1.0.0',
     });
 
@@ -67,8 +69,6 @@ export class McpServerManager {
     const app = express();
     app.use(cors());
     app.use(express.json());
-
-    const basePath = getProjectBasePath(config);
 
     // SSE 端點
     app.get(`${basePath}/sse`, (req: Request, res: Response) => {
@@ -93,21 +93,21 @@ export class McpServerManager {
 
     try {
       // 啟動 HTTP 服務
-      this.httpServer = app.listen(config.port, () => {
+      this.httpServer = app.listen(port, () => {
         console.log(
-          `MCP HTTP Server is running at http://localhost:${config.port}`
+          `MCP HTTP Server is running at http://localhost:${port}${basePath}`
         );
         vscode.window.showInformationMessage(
-          `MCP HTTP Server started at http://localhost:${config.port}`
+          `MCP HTTP Server started at http://localhost:${port}${basePath}`
         );
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(
-        `Failed to start the MCP HTTP server on port ${config.port}. Error: ${errorMsg}`
+        `Failed to start the MCP HTTP server on port ${port}. Error: ${errorMsg}`
       );
       throw new Error(
-        `Failed to start the MCP HTTP server on port ${config.port}. Error: ${errorMsg}`
+        `Failed to start the MCP HTTP server on port ${port}. Error: ${errorMsg}`
       );
     }
 

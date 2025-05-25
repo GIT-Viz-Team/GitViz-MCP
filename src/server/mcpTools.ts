@@ -1,12 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import * as vscode from 'vscode';
-import { getRawGitLogFromRepo } from '../git';
-import { WorkspaceManager } from '../WorkspaceManager';
-import { VIRTUAL_REPO_PATH } from '../common/constants';
-import { WebviewController } from '../WebviewController';
-import { VirtualRepoStateManager } from '../VirtualRepoStateManager';
-import { parseGitLog } from '../git';
+import { getGitLog } from '../tools/GetGitLogTool';
+import { visualizeGitLog } from '../tools/VisualizeGitLogTool';
+import { highlightCommit } from '../tools/HighlightCommitTool';
 
 /**
  * 註冊 MCP Server 工具
@@ -26,36 +22,10 @@ export function registerTools(server: McpServer) {
         .describe('The file or folder path to trace the Git repository from.'),
     },
     async ({ path }) => {
-      if (!path) {
-        return {
-          content: [{ type: 'text', text: 'Missing input path.' }],
-          isError: true,
-        };
-      }
-
       try {
-        // 取得 git repository
-        const fileUri = vscode.Uri.file(path);
-        const repo = WorkspaceManager.getInstance()
-          .getGitAPI()
-          .getRepository(fileUri);
-
-        if (!repo || !repo.rootUri) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'No git repository found for the given path.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        // 取得 raw git log
-        const log = await getRawGitLogFromRepo(repo.rootUri.fsPath);
+        const log = await getGitLog(path);
         return {
-          content: [{ type: 'text', text: log ?? 'Failed to get git log.' }],
+          content: [{ type: 'text', text: log }],
         };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -89,47 +59,21 @@ export function registerTools(server: McpServer) {
     },
     async ({ beforeOperationLog, afterOperationLog }) => {
       try {
-        parseGitLog(beforeOperationLog);
-        parseGitLog(afterOperationLog);
-      } catch (e: any) {
-        const errorMsg = `Git log format error:\n${e.message}\n\nExpected format:\n<hash> (<author>) (<date>) (<message>) (<optional refs>) [<parents>]Format details:\n- <hash>: a short Git commit hash (hexadecimal, e.g., abc123f)\n- <date>: relative time (e.g., "2 days ago")\n- <optional refs>: comma-separated references like "HEAD, main" (optional; can be omitted)\n- <parent hashes>: space-separated commit hashes, surrounded by square brackets (e.g., [abc123])`;
+        await visualizeGitLog(beforeOperationLog, afterOperationLog);
+
         return {
-          content: [{ type: 'text', text: errorMsg }],
+          content: [
+            { type: 'text', text: 'Visualized log in the Git Log Viewer.' },
+          ],
+        };
+      } catch (e: any) {
+        const errMsg = `Git log format error:\n${e.message}\n\nExpected format:\n<hash> (<author>) (<date>) (<message>) (<optional refs>) [<parents>]\nFormat details:\n- <hash>: short hex commit hash (abc123f)\n- <date>: relative time (e.g. "2 days ago")\n- <optional refs>: comma-separated refs like "HEAD, main"\n- <parents>: space-separated hashes in brackets (e.g. [abc123])`;
+
+        return {
+          content: [{ type: 'text', text: errMsg }],
           isError: true,
         };
       }
-
-      // 更新 Webview
-      const workspaceManager = WorkspaceManager.getInstance();
-      const webviewController = WebviewController.getInstance();
-
-      const repos = workspaceManager.getAvailableRepos();
-      webviewController.sendMessage({
-        type: 'getAvailableRepo',
-        payload: {
-          repos: repos.map((repo: any) => ({
-            label: repo.label,
-            description: repo.description,
-            path: repo.path,
-          })),
-        },
-      });
-
-      VirtualRepoStateManager.getInstance().setLogs(
-        beforeOperationLog,
-        afterOperationLog
-      );
-
-      if (!webviewController.isVisible()) {
-        await webviewController.createPanel();
-      }
-      workspaceManager.setSelectedRepo(VIRTUAL_REPO_PATH);
-
-      return {
-        content: [
-          { type: 'text', text: 'Visualized log in the Git Log Viewer.' },
-        ],
-      };
     }
   );
 
@@ -148,27 +92,22 @@ export function registerTools(server: McpServer) {
         ),
     },
     async ({ hash }) => {
-      if (!hash) {
+      try {
+        highlightCommit(hash); // 執行核心邏輯
         return {
-          content: [{ type: 'text', text: 'Missing commit hash.' }],
+          content: [
+            {
+              type: 'text',
+              text: `Commit ${hash} has been highlighted in the Git log tree.`,
+            },
+          ],
+        };
+      } catch (e: any) {
+        return {
+          content: [{ type: 'text', text: `Error: ${e.message}` }],
           isError: true,
         };
       }
-
-      // 透過 WebviewController 傳送高亮指令
-      WebviewController.getInstance().sendMessage({
-        type: 'highlightCommit',
-        payload: { hash },
-      });
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Commit ${hash} has been highlighted in the Git log tree.`,
-          },
-        ],
-      };
     }
   );
 }

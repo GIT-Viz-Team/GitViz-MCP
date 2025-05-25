@@ -17,6 +17,23 @@
     ],
     "main": "./dist/extension.js",
     "contributes": {
+        "configuration": {
+            "title": "GitViz MCP Server",
+            "properties": {
+                "gitVizMcp.port": {
+                    "type": "number",
+                    "default": 3000,
+                    "minimum": 1,
+                    "maximum": 65535,
+                    "description": "Port GitViz MCP server listens to."
+                },
+                "gitVizMcp.basePath": {
+                    "type": "string",
+                    "default": "/gitviz",
+                    "description": "Base path prefix for all GitViz MCP endpoints (e.g. /gitviz). Leave empty for root."
+                }
+            }
+        },
         "languageModelTools": [
             {
                 "name": "highlight_commit",
@@ -87,20 +104,24 @@
         "menus": {
             "editor/title": [
                 {
-                    "command": "gitgpt.openGitLogViewer",
+                    "command": "gitVizMcp.openGitLogViewer",
                     "group": "navigation"
                 }
             ]
         },
         "commands": [
             {
-                "command": "gitgpt.openGitLogViewer",
-                "title": "GitGPT: Open Git Log Viewer",
+                "command": "gitVizMcp.openGitLogViewer",
+                "title": "gitVizMcp: Open Git Log Viewer",
                 "icon": "$(git-branch)"
             },
             {
-                "command": "gitgpt.selectRepo",
-                "title": "GitGPT: Set Repository"
+                "command": "gitVizMcp.selectRepo",
+                "title": "gitVizMcp: Set Repository"
+            },
+            {
+                "command": "gitVizMcp.registerCopilot",
+                "title": "gitVizMcp: Register MCP Server to VS Code Settings"
             }
         ]
     },

@@ -6,18 +6,21 @@ import { WorkspaceManager } from './WorkspaceManager';
 import { SelectRepoTool, ListReposTool } from './tools/SelectRepoTool';
 import { OpenGitLogViewerTool } from './tools/OpenGitLogViewerTool';
 import { VisualizeGitLogTool } from './tools/VisualizeGitLogTool';
-import { HightlightCommitTool } from './tools/HighlightCommitTool';
+import { HighlightCommitTool } from './tools/HighlightCommitTool';
 import { GetGitLogTool } from './tools/GetGitLogTool';
 import { resolveEffectiveGitLogs, checkoutVersion } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
+import { McpServerManager } from './server/McpServerManager';
 
 export function activate(context: vscode.ExtensionContext) {
   VirtualRepoStateManager.init();
   WebviewController.init(context);
   WorkspaceManager.init();
+  McpServerManager.init(context);
 
   const workspaceManager = WorkspaceManager.getInstance();
   const webviewController = WebviewController.getInstance();
+  const mcpServerManager = McpServerManager.getInstance();
 
   workspaceManager.onRepoChanged(async (repoPath) => {
     if (!repoPath) {
@@ -129,11 +132,13 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(openGitLogViewer, selectRepo);
 
+  mcpServerManager.start();
+
   // 註冊 LLM 工具
   context.subscriptions.push(
     vscode.lm.registerTool('visualize_git_log', new VisualizeGitLogTool()),
     vscode.lm.registerTool('get_git_log', new GetGitLogTool()),
-    vscode.lm.registerTool('highlight_commit', new HightlightCommitTool())
+    vscode.lm.registerTool('highlight_commit', new HighlightCommitTool())
   );
 
   //   ensureGitHubMcpServerRegistered();

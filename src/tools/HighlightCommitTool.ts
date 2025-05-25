@@ -5,7 +5,7 @@ interface IHighlightCommit {
   hash: string;
 }
 
-export class HightlightCommitTool
+export class HighlightCommitTool
   implements vscode.LanguageModelTool<IHighlightCommit>
 {
   readonly name = 'highlight_commit';
@@ -23,7 +23,7 @@ export class HightlightCommitTool
     }
 
     WebviewController.getInstance().sendMessage({
-      type: 'hightlightCommit',
+      type: 'highlightCommit',
       payload: {
         hash: hash,
       },

@@ -84,3 +84,55 @@ export async function checkoutVersion(hash: string, repoPath: string) {
     return;
   }
 }
+
+/**
+ * 解析 Git log 文字，確認格式正確並解析為 commit 結構。
+ * @param logText Git log 文字
+ * @returns commit 陣列
+ * @throws 格式錯誤時，丟出錯誤
+ */
+export function parseGitLog(logText: string) {
+  if (!logText || logText.trim() === '') {
+    throw new Error('Empty git log input');
+  }
+
+  const lines = logText.trim().split('\n');
+  const commits = [];
+
+  const regex =
+    /^([0-9a-f]+) \(([^)]+)\) \(([^)]+)\) \(([^)]+)\)(?:\s+\(([^)]*)\))?\s+\[([^\]]*)\]$/;
+
+  for (const line of lines) {
+    const match = line.match(regex);
+    if (!match) {
+      throw new Error(`Invalid log format at line: ${line}`);
+    }
+
+    const [, hash, author, date, message, refs, parents] = match;
+
+    const refsArray = refs
+      ? refs.split(', ').filter((ref) => ref.trim() !== '')
+      : [];
+
+    const parentsArray = parents
+      ? parents.split(' ').filter((parent) => parent.trim() !== '')
+      : [];
+
+    const commit = {
+      hash,
+      author,
+      date,
+      message,
+      refs: refsArray,
+      parents: parentsArray,
+    };
+
+    commits.push(commit);
+  }
+
+  if (commits.length === 0) {
+    throw new Error('No valid commits found in the input');
+  }
+
+  return commits;
+}

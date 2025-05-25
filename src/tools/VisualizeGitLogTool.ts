@@ -3,6 +3,7 @@ import { WebviewController } from '../WebviewController';
 import { VirtualRepoStateManager } from '../VirtualRepoStateManager';
 import { WorkspaceManager } from '../WorkspaceManager';
 import { VIRTUAL_REPO_PATH } from '../common/constants';
+import { parseGitLog } from '../git';
 
 interface IVisualizesGitLog {
   beforeOperationLog: string;
@@ -16,26 +17,19 @@ export class VisualizeGitLogTool
 
   constructor() {}
 
-  async prepareInvocation(
-    options: vscode.LanguageModelToolInvocationPrepareOptions<IVisualizesGitLog>
-  ) {
-    return {
-      confirmationMessages: {
-        title: 'Visualize Git Log Tree',
-        message: new vscode.MarkdownString(
-          `The following Git commit logs will be visualized as a tree:\n\n---\n\n` +
-            `**Before Operation:**\n\n\`\`\`text\n${options.input.beforeOperationLog}\n\`\`\`\n\n` +
-            `**After Operation:**\n\n\`\`\`text\n${options.input.afterOperationLog}\n\`\`\``
-        ),
-      },
-      invocationMessage: 'Visualizing Git log in Git Log Viewer',
-    };
-  }
-
   async invoke(
     options: vscode.LanguageModelToolInvocationOptions<IVisualizesGitLog>
   ) {
-    await WebviewController.getInstance().createPanel();
+    try {
+      parseGitLog(options.input.beforeOperationLog);
+      parseGitLog(options.input.afterOperationLog);
+    } catch (e: any) {
+      return new vscode.LanguageModelToolResult([
+        new vscode.LanguageModelTextPart(
+          `Git log format error:\n${e.message}\n\nExpected format:\n<hash> (<author>) (<date>) (<message>) (<optional refs>) [<parents>]Format details:\n- <hash>: a short Git commit hash (hexadecimal, e.g., abc123f)\n- <date>: relative time (e.g., "2 days ago")\n- <optional refs>: comma-separated references like "HEAD, main" (optional; can be omitted)\n- <parent hashes>: space-separated commit hashes, surrounded by square brackets (e.g., [abc123])`
+        ),
+      ]);
+    }
 
     const workspaceManager = WorkspaceManager.getInstance();
     const webviewController = WebviewController.getInstance();
@@ -60,7 +54,7 @@ export class VisualizeGitLogTool
     if (!webviewController.isVisible()) {
       await webviewController.createPanel();
     }
-    
+
     workspaceManager.setSelectedRepo(VIRTUAL_REPO_PATH);
 
     return new vscode.LanguageModelToolResult([

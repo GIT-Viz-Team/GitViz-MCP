@@ -148,15 +148,15 @@ export class UI {
 
       // 設置動畫狀態
       this.isAnimating = true;
-      
+
       // 執行動畫循環
       const animateLoop = () => {
         // 先視覺化初始狀態
         this.visualizer.visualize(startGraph);
-        
+
         setTimeout(() => {
           this.visualizer.visualize(endGraph);
-          
+
           setTimeout(() => {
             if (this.isAnimating) {
               animateLoop();
@@ -164,16 +164,15 @@ export class UI {
           }, 3000);
         }, 2000);
       };
-      
+
       // 開始第一輪動畫
       animateLoop();
-      
     } catch (error) {
       this.isAnimating = false;
       this.showError(error.message);
     }
   }
-  
+
   /**
    * 停止動畫輪播
    */

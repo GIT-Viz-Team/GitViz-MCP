@@ -15,7 +15,10 @@ export const DEFAULT_CONFIG: GitVizConfig = {
 };
 
 export function normalizeBasePath(basePath?: string): string {
-  if (!basePath) return '';
+  if (!basePath) {
+    return '';
+  }
+
   return basePath.startsWith('/') ? basePath : `/${basePath}`;
 }
 

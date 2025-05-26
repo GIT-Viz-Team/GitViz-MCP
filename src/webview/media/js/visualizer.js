@@ -86,21 +86,24 @@ export class GitVisualizer {
    */
   clearVisualization() {
     // 移除所有節點
-    this.zoomGroup.selectAll('.node')
+    this.zoomGroup
+      .selectAll('.node')
       .transition()
       .duration(800)
       .style('opacity', 0)
       .remove();
 
     // 移除所有連接
-    this.zoomGroup.selectAll('.link')
+    this.zoomGroup
+      .selectAll('.link')
       .transition()
       .duration(800)
       .style('opacity', 0)
       .remove();
 
     // 移除所有分支標籤
-    this.zoomGroup.selectAll('.branch-label')
+    this.zoomGroup
+      .selectAll('.branch-label')
       .transition()
       .duration(800)
       .style('opacity', 0)

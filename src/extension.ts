@@ -12,6 +12,7 @@ import { McpServerManager } from './server/McpServerManager';
 import { registerGitVizToVsCode } from './commands/registerGitViz';
 import { registerSelectRepo } from './commands/selectRepo';
 import { registerOpenGitLogViewer } from './commands/openGitLogViewer';
+import { GitRepository, AUTO_REPO } from './types';
 
 export function activate(context: vscode.ExtensionContext) {
   VirtualRepoStateManager.init();
@@ -47,13 +48,22 @@ export function activate(context: vscode.ExtensionContext) {
     const repos = workspaceManager.getAvailableRepos();
 
     webviewController.sendMessage({
-      type: 'getAvailableRepo',
+      type: 'updateAvailableRepos',
       payload: {
-        repos: repos.map((repo: any) => ({
+        repositories: repos.map((repo: GitRepository) => ({
           label: repo.label,
           description: repo.description,
           path: repo.path,
         })),
+      },
+    });
+
+    webviewController.sendMessage({
+      type: 'setCurrentRepo',
+      payload: {
+        currentRepoPath: workspaceManager.getIsAutoMode()
+          ? AUTO_REPO.path
+          : workspaceManager.getCurrentRepoPath(),
       },
     });
   });
@@ -61,7 +71,16 @@ export function activate(context: vscode.ExtensionContext) {
   webviewController.onDidReceiveMessage(async (message) => {
     if (message.type === 'switchRepo') {
       const path = message.payload.path;
+
       workspaceManager.setSelectedRepo(path);
+      webviewController.sendMessage({
+        type: 'setCurrentRepo',
+        payload: {
+          currentRepoPath: workspaceManager.getIsAutoMode()
+            ? AUTO_REPO.path
+            : workspaceManager.getCurrentRepoPath(),
+        },
+      });
     } else if (message.type === 'checkout') {
       const hash = message.payload.hash;
       const path = workspaceManager.getCurrentRepoPath();

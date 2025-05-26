@@ -1,7 +1,7 @@
 import { WebviewController } from '../WebviewController';
 import { VirtualRepoStateManager } from '../VirtualRepoStateManager';
 import { WorkspaceManager } from '../WorkspaceManager';
-import { VIRTUAL_REPO_PATH } from '../constants';
+import { AUTO_REPO, VIRTUAL_REPO } from '../types';
 import { parseGitLog } from '../git';
 
 export async function visualizeGitLog(before: string, after: string) {
@@ -30,5 +30,14 @@ export async function visualizeGitLog(before: string, after: string) {
   if (!webviewController.isVisible()) {
     await webviewController.createPanel();
   }
-  workspaceManager.setSelectedRepo(VIRTUAL_REPO_PATH);
+  workspaceManager.setSelectedRepo(VIRTUAL_REPO.path);
+
+  webviewController.sendMessage({
+    type: 'setCurrentRepo',
+    payload: {
+      currentRepoPath: workspaceManager.getIsAutoMode()
+        ? AUTO_REPO.path
+        : workspaceManager.getCurrentRepoPath(),
+    },
+  });
 }

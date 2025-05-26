@@ -1,13 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { VIRTUAL_REPO_PATH } from './constants';
+import { GitRepository, VIRTUAL_REPO, AUTO_REPO } from './types';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
-
-export interface RepoEntry {
-  label: string;
-  description: string;
-  path: string;
-}
 
 /**
  * WorkspaceManager 負責管理目前使用中的 Git 存放庫，
@@ -43,7 +37,7 @@ export class WorkspaceManager {
     this.virtualRepoManager = VirtualRepoStateManager.getInstance();
 
     this.virtualRepoManager.onChange(() => {
-      this._onRepoChanged.fire(VIRTUAL_REPO_PATH);
+      this._onRepoChanged.fire(VIRTUAL_REPO.path);
     });
 
     // 取得 Git 擴充功能的 API
@@ -137,6 +131,13 @@ export class WorkspaceManager {
   }
 
   /**
+   * 取得目前是否啟用自動模式的狀態。
+   * @returns boolean - 如果啟用自動模式則為 true，否則為 false。
+   */
+  public getIsAutoMode(): boolean {
+    return this.isAutoMode;
+  }
+  /**
    * 更新當前 repo 狀態與回傳通知
    * @param repoPath repo 的唯一識別（path）
    */
@@ -182,30 +183,21 @@ export class WorkspaceManager {
   /**
    * 取得所有可選擇的 Git repo 清單（含 Auto 與虛擬 repo）
    */
-  public getAvailableRepos(): RepoEntry[] {
-    const repos: RepoEntry[] = this.gitAPI.repositories
+  public getAvailableRepos(): GitRepository[] {
+    const repos: GitRepository[] = this.gitAPI.repositories
       .map((repo: any) => ({
         label: path.basename(repo.rootUri.fsPath),
         description: repo.rootUri.fsPath,
         path: repo.rootUri.fsPath,
       }))
-      .sort((a: RepoEntry, b: RepoEntry) => a.label.localeCompare(b.label));
+      .sort((a: GitRepository, b: GitRepository) =>
+        a.label.localeCompare(b.label)
+      );
 
     // 加入虛擬 repo 條目
-    repos.push({
-      label: this.virtualRepoLabel,
-      description: 'A virtual GitGPT agent repo with no real file system',
-      path: VIRTUAL_REPO_PATH,
-    });
+    repos.push(VIRTUAL_REPO);
 
     // 在最前面加入 Auto 模式選項
-    return [
-      {
-        label: 'Auto',
-        description: 'Automatically switch according to the current file',
-        path: '__auto__',
-      },
-      ...repos,
-    ];
+    return [AUTO_REPO, ...repos];
   }
 }

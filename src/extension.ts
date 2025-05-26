@@ -28,9 +28,6 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    // const shortName = vscode.workspace.asRelativePath(repoPath, false);
-    // statusBar.text = `$(repo) Git: ${shortName}`;
-
     const logs = await resolveEffectiveGitLogs(repoPath);
     if (!logs) {
       return;

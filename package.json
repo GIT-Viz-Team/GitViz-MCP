@@ -123,6 +123,10 @@
             {
                 "command": "gitVizMcp.registerCopilot",
                 "title": "gitVizMcp: Register MCP Server to VS Code Settings"
+            },
+            {
+                "command": "gitVizMcp.restartMcpServer",
+                "title": "GitVizMCP: Restart Server"
             }
         ]
     },

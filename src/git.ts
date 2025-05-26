@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { exec as execCb } from 'child_process';
-import { VIRTUAL_REPO_PATH } from './constants';
+import { VIRTUAL_REPO } from './types';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
 
 const exec = promisify(execCb);
@@ -47,7 +47,7 @@ export async function getRawGitLogFromRepo(
 export async function resolveEffectiveGitLogs(
   repoPath: string
 ): Promise<{ before: string; after: string } | null> {
-  if (repoPath === VIRTUAL_REPO_PATH) {
+  if (repoPath === VIRTUAL_REPO.path) {
     return VirtualRepoStateManager.getInstance().getLogs();
   }
 

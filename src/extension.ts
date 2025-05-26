@@ -98,6 +98,9 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'gitVizMcp.openGitLogViewer',
       registerOpenGitLogViewer
+    ),
+    vscode.commands.registerCommand('gitVizMcp.restartMcpServer', () =>
+      mcpServerManager.restart()
     )
   );
 

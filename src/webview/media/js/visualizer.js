@@ -214,9 +214,10 @@ export class GitVisualizer {
       // 單個根節點居中
       rootNodes[0].x = this.width / 2;
     } else {
-      // 多個根節點以 dx 間距分布於中心
+      // 多個根節點以 dx 間距分布於中心，確保最小間距
+      const minSpacing = Math.max(dx, 100); // 最小間距 100px
       rootNodes.forEach((node, i) => {
-        node.x = this.width / 2 + (i - (rootNodes.length - 1) / 2) * dx;
+        node.x = this.width / 2 + (i - (rootNodes.length - 1) / 2) * minSpacing;
       });
     }
 
@@ -255,14 +256,15 @@ export class GitVisualizer {
           // 單一子節點對齊父節點
           groupNodes[0].x = parent.x;
         } else {
-          // 多個子節點以固定間距 dx 排列
+          // 多個子節點以固定間距 dx 排列，確保最小間距
+          const minSpacing = Math.max(dx, 80); // 最小間距 80px
           groupNodes.forEach((node, i) => {
-            node.x = parent.x + (i - (k - 1) / 2) * dx;
+            node.x = parent.x + (i - (k - 1) / 2) * minSpacing;
           });
         }
       }
 
-      // 處理合併節點（有多個父節點的節點）
+            // 處理合併節點（有多個父節點的節點）
       nodesAtLevel.forEach((node) => {
         const parentIds = parentMap.get(node.id);
         if (parentIds.length > 1) {
@@ -270,6 +272,14 @@ export class GitVisualizer {
           const mainParent = nodes.find((n) => n.id === parentIds[0]);
           if (mainParent) {
             node.x = mainParent.x;
+          }
+        }
+        
+        // 特殊處理 stash 節點：稍微偏移以避免重疊
+        if (node.isStash && parentIds.length > 0) {
+          const parent = nodes.find((n) => n.id === parentIds[0]);
+          if (parent) {
+            node.x = parent.x + 30; // 向右偏移 30px
           }
         }
       });
@@ -282,10 +292,55 @@ export class GitVisualizer {
       node.y = this.height - this.padding.bottom - nodeLevel * dy;
     });
 
+    // 執行節點衝突檢測和避免
+    this.resolveNodeCollisions(nodes, levelNodes);
+
     // 處理連接
     links.forEach((link) => {
       link.source = nodes.find((n) => n.id === link.sourceHash);
       link.target = nodes.find((n) => n.id === link.targetHash);
+    });
+  }
+
+  /**
+   * 解決節點衝突問題
+   * @param {Array} nodes - 所有節點
+   * @param {Object} levelNodes - 按層級分組的節點
+   */
+  resolveNodeCollisions(nodes, levelNodes) {
+    const minDistance = 60; // 最小節點間距
+    
+    // 對每一層進行衝突檢測
+    Object.keys(levelNodes).forEach(level => {
+      const nodesAtLevel = levelNodes[level];
+      if (nodesAtLevel.length <= 1) return;
+      
+      // 按 x 座標排序
+      nodesAtLevel.sort((a, b) => a.x - b.x);
+      
+      // 檢測和解決衝突
+      for (let i = 1; i < nodesAtLevel.length; i++) {
+        const currentNode = nodesAtLevel[i];
+        const prevNode = nodesAtLevel[i - 1];
+        
+        const distance = currentNode.x - prevNode.x;
+        if (distance < minDistance) {
+          // 調整當前節點位置
+          const adjustment = minDistance - distance;
+          currentNode.x += adjustment;
+          
+          // 遞迴調整後續節點
+          for (let j = i + 1; j < nodesAtLevel.length; j++) {
+            const nextNode = nodesAtLevel[j];
+            if (nextNode.x - currentNode.x < minDistance) {
+              nextNode.x = currentNode.x + minDistance;
+              currentNode = nextNode;
+            } else {
+              break;
+            }
+          }
+        }
+      }
     });
   }
 
@@ -330,10 +385,11 @@ export class GitVisualizer {
     // 繪製提交圓圈
     nodeEnter
       .append('circle')
-      .attr('r', 10)
-      .attr('fill', (d) => this.colorScale(d.author))
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1.5);
+      .attr('r', (d) => d.isStash ? 8 : 10) // stash 節點稍小
+      .attr('fill', (d) => d.isStash ? '#f59e0b' : this.colorScale(d.author)) // stash 節點用橙色
+      .attr('stroke', (d) => d.isStash ? '#d97706' : '#333')
+      .attr('stroke-width', (d) => d.isStash ? 2 : 1.5)
+      .attr('stroke-dasharray', (d) => d.isStash ? '2,2' : 'none'); // stash 節點用虛線邊框
 
     // 添加提交哈希標籤
     nodeEnter

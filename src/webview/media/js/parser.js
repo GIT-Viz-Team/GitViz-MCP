@@ -48,6 +48,8 @@ export class GitLogParser {
         message,
         refs: refsArray,
         parents: parentsArray,
+        isStash: message.toLowerCase().includes('stash') || 
+                refsArray.some(ref => ref.toLowerCase().includes('stash')),
       };
 
       commits.push(commit);
@@ -80,6 +82,7 @@ export class GitLogParser {
         message: commit.message,
         refs: commit.refs,
         parents: commit.parents,
+        isStash: commit.isStash || false,
       });
     });
 

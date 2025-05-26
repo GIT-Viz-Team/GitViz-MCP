@@ -15,6 +15,9 @@ export class UI {
     this.zoomInBtn = document.getElementById('zoomInBtn');
     this.zoomOutBtn = document.getElementById('zoomOutBtn');
     this.resetBtn = document.getElementById('resetBtn');
+    this.playPauseBtn = document.getElementById('playPauseBtn');
+    this.playIcon = document.getElementById('playIcon');
+    this.pauseIcon = document.getElementById('pauseIcon');
     this.visualizationSelect = document.getElementById('visualizationSelect');
 
     // Git log
@@ -29,6 +32,10 @@ export class UI {
 
     // 動畫狀態
     this.isAnimating = false;
+    this.isPaused = false;
+    this.animationTimeouts = [];
+    this.startGraph = null;
+    this.endGraph = null;
 
     // Vscode API
     this.vscode = acquireVsCodeApi();
@@ -61,6 +68,10 @@ export class UI {
 
     this.visualizationSelect.addEventListener('change', () => {
       this.switchVisualizationView();
+    });
+
+    this.playPauseBtn.addEventListener('click', () => {
+      this.toggleAnimation();
     });
 
     // 調整大小處理器
@@ -117,19 +128,15 @@ export class UI {
   }
 
   /**
-   * 執行 Git Log 動畫
+   * 初始化動畫數據
    */
-  animateGitLog() {
-    if (this.isAnimating) {
-      return; // 避免重複動畫
-    }
-
+  initializeAnimation() {
     const startLogText = this.gitLogInput.trim();
     const endLogText = this.gitLogEndState.trim();
 
     if (!startLogText || !endLogText) {
       this.showError('請確保初始和結束狀態的 Git Log 都已輸入');
-      return;
+      return false;
     }
 
     try {
@@ -138,39 +145,70 @@ export class UI {
       const endCommits = GitLogParser.parse(endLogText);
 
       // 從提交構建圖形
-      const startGraph = GitLogParser.buildGraph(startCommits);
-      const endGraph = GitLogParser.buildGraph(endCommits);
+      this.startGraph = GitLogParser.buildGraph(startCommits);
+      this.endGraph = GitLogParser.buildGraph(endCommits);
 
       // 如果尚未創建，則初始化視覺化器
       if (!this.visualizer) {
         this.visualizer = new GitVisualizer('visualization');
       }
 
-      // 設置動畫狀態
-      this.isAnimating = true;
-
-      // 執行動畫循環
-      const animateLoop = () => {
-        // 先視覺化初始狀態
-        this.visualizer.visualize(startGraph);
-
-        setTimeout(() => {
-          this.visualizer.visualize(endGraph);
-
-          setTimeout(() => {
-            if (this.isAnimating) {
-              animateLoop();
-            }
-          }, 3000);
-        }, 2000);
-      };
-
-      // 開始第一輪動畫
-      animateLoop();
+      return true;
     } catch (error) {
-      this.isAnimating = false;
       this.showError(error.message);
+      return false;
     }
+  }
+
+  /**
+   * 執行 Git Log 動畫
+   */
+  animateGitLog() {
+    if (this.isAnimating && !this.isPaused) {
+      return; // 避免重複動畫
+    }
+
+    // 如果還沒有初始化動畫數據，先初始化
+    if (!this.startGraph || !this.endGraph) {
+      if (!this.initializeAnimation()) {
+        return;
+      }
+    }
+
+    // 設置動畫狀態
+    this.isAnimating = true;
+    this.isPaused = false;
+    this.updatePlayPauseIcon();
+
+    // 開始動畫循環
+    this.startAnimationLoop();
+  }
+
+  /**
+   * 開始動畫循環
+   */
+  startAnimationLoop() {
+    if (!this.isAnimating) return;
+    if (this.isPaused) return;
+
+    // 先視覺化初始狀態
+    this.visualizer.visualize(this.startGraph);
+
+    const timeout1 = setTimeout(() => {
+      if (!this.isAnimating || this.isPaused) return;
+      
+      this.visualizer.visualize(this.endGraph);
+
+      const timeout2 = setTimeout(() => {
+        if (this.isAnimating && !this.isPaused) {
+          this.startAnimationLoop(); // 遞迴呼叫
+        }
+      }, 3000);
+      
+      this.animationTimeouts.push(timeout2);
+    }, 2000);
+    
+    this.animationTimeouts.push(timeout1);
   }
 
   /**
@@ -178,10 +216,74 @@ export class UI {
    */
   stopAnimation() {
     this.isAnimating = false;
+    this.isPaused = false;
+    this.clearAnimationTimeouts();
+    this.updatePlayPauseIcon();
+    // 清除動畫數據，下次播放時重新初始化
+    this.startGraph = null;
+    this.endGraph = null;
+  }
+
+  /**
+   * 切換動畫播放/暫停狀態
+   */
+  toggleAnimation() {
+    if (!this.isAnimating) {
+      // 如果沒有動畫在運行，嘗試開始動畫
+      if (this.gitLogEndState.trim()) {
+        this.animateGitLog();
+      }
+    } else {
+      // 如果有動畫在運行，切換暫停狀態
+      this.isPaused = !this.isPaused;
+      this.updatePlayPauseIcon();
+      
+      if (this.isPaused) {
+        this.clearAnimationTimeouts();
+      } else {
+        // 恢復動畫
+        this.resumeAnimation();
+      }
+    }
+  }
+
+  /**
+   * 恢復動畫
+   */
+  resumeAnimation() {
+    if (this.isAnimating && !this.isPaused) {
+      this.startAnimationLoop();
+    }
+  }
+
+  /**
+   * 清除所有動畫計時器
+   */
+  clearAnimationTimeouts() {
+    this.animationTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    this.animationTimeouts = [];
+  }
+
+  /**
+   * 更新播放/暫停按鈕圖示
+   */
+  updatePlayPauseIcon() {
+    if (this.isAnimating && !this.isPaused) {
+      // 顯示暫停圖示
+      this.playIcon.classList.add('hidden');
+      this.pauseIcon.classList.remove('hidden');
+      this.playPauseBtn.classList.add('animating');
+    } else {
+      // 顯示播放圖示
+      this.playIcon.classList.remove('hidden');
+      this.pauseIcon.classList.add('hidden');
+      this.playPauseBtn.classList.remove('animating');
+    }
   }
 
   setupVisualizationSelect(payload) {
     const repos = payload.repos;
+    console.log(this.visualizationSelect.innerHTML);
     // 清除現有選項以避免重複添加
     this.visualizationSelect.innerHTML = '';
 
@@ -196,6 +298,11 @@ export class UI {
   }
 
   switchVisualizationView() {
+    // 切換 repo 時停止當前動畫
+    if (this.isAnimating) {
+      this.stopAnimation();
+    }
+    
     const selectedView = this.visualizationSelect.value;
     this.vscode.postMessage({
       type: 'switchRepo',
@@ -213,6 +320,8 @@ export class UI {
       } else if (data.type === 'getGitLog') {
         this.gitLogInput = data.payload.beforeOperationLog;
         this.gitLogEndState = data.payload.afterOperationLog;
+        console.log(this.gitLogInput);
+        console.log(this.gitLogEndState);
         this.parseGitLog();
       }
     });

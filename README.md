@@ -9,15 +9,18 @@ A powerful VS Code extension that visualizes Git history and commit logs with an
 ## Features
 
 ### Animated Git Visualization
+
 - **Before/After Animations**: Visualize how Git operations like merge, rebase, and cherry-pick transform your commit tree
 - **Interactive Controls**: Play, pause
 
 ### Git History Analysis
-- **Branch Structure**: Clear visualization of branch relationships and merge points
+
+- **Branch Structure**: Clear visualization of branch relationships an`d merge points
 - **Commit Highlighting**: Click to highlight specific commits in the tree
 - **Real-time Updates**: Automatically reflects changes in your working directory
 
 ### AI-Powered Git Assistance
+
 - **Language Model Integration**: Built-in tools for Git analysis and assistance
 - **Smart Repository Detection**: Automatically detects and switches between repositories
 - **Enhanced Git Commands**: Integrated AI tools for better Git workflow
@@ -25,30 +28,61 @@ A powerful VS Code extension that visualizes Git history and commit logs with an
 ## Installation
 
 ### From VS Code Marketplace
+
 1. Open VS Code
 2. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
 3. Search for "GitViz MCP"
 4. Click **Install**
 
 ### Manual Installation
+
 1. Download the `.vsix` file from [releases](https://github.com/your-repo/releases)
 2. Open VS Code
 3. Run `Extensions: Install from VSIX...` from Command Palette
 4. Select the downloaded file
 
+### MCP Server Config
+
+#### Copilot Config
+
+```
+"servers": {
+    "gitViz": {
+        "type": "http",
+        "url": "http://localhost:3000/gitviz/sse"
+    }
+}
+```
+
+or use command `gitVizMcp: Register MCP Server`.
+
+#### Cline Config
+
+```
+"mcpServers": {
+    "gitViz": {
+        "url": "http://localhost:3000/gitviz/sse",
+        "transportType": "sse"
+    }
+}
+```
+
 ## Usage
 
 ### Opening Git Visualizer
+
 - **From Editor**: Click the Git branch icon in the editor title bar
 - **From Command Palette**: `Ctrl+Shift+P` → "gitVizMcp: Open Git Log Viewer"
 
 ### Basic Operations
+
 1. **Select Repository**: Use "gitVizMcp: Set Repository" to choose which repo to visualize
 2. **View Animation**: The interface will show before/after states of Git operations
 3. **Control Playback**: Use play/pause button to control animation timing
 4. **Zoom & Navigate**: Use zoom controls to explore complex commit trees
 
 ### Repository Management
+
 - **Auto Mode**: Automatically switch repository based on current file
 - **Manual Selection**: Choose specific repository from available options
 - **Multiple Workspaces**: Supports multi-root workspaces
@@ -65,19 +99,20 @@ Configure GitViz MCP in VS Code settings:
 ```
 
 ### Available Settings
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `gitVizMcp.port` | `3000` | Port for MCP server |
+
+| Setting              | Default     | Description                 |
+| -------------------- | ----------- | --------------------------- |
+| `gitVizMcp.port`     | `3000`      | Port for MCP server         |
 | `gitVizMcp.basePath` | `"/gitviz"` | Base path for API endpoints |
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `gitVizMcp: Open Git Log Viewer` | Open the main visualization interface |
-| `gitVizMcp: Set Repository` | Select which repository to visualize |
+| Command                          | Description                             |
+| -------------------------------- | --------------------------------------- |
+| `gitVizMcp: Open Git Log Viewer` | Open the main visualization interface   |
+| `gitVizMcp: Set Repository`      | Select which repository to visualize    |
 | `gitVizMcp: Register MCP Server` | Register MCP server in VS Code settings |
-| `gitVizMcp: Restart Server` | Restart the MCP server |
+| `gitVizMcp: Restart Server`      | Restart the MCP server                  |
 
 ## Language Model Tools
 

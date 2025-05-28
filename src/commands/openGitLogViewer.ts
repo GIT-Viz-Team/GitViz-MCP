@@ -17,7 +17,7 @@ export async function registerOpenGitLogViewer() {
 
     const repos = workspaceManager.getAvailableRepos();
     webviewController.sendMessage({
-      type: 'getAvailableRepo',
+      type: 'updateAvailableRepos',
       payload: {
         repos: repos.map((repo: any) => ({
           label: repo.label,

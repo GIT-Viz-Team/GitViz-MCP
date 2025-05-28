@@ -283,18 +283,24 @@ export class UI {
 
   setupVisualizationSelect(payload) {
     const repos = payload.repos;
-    console.log(this.visualizationSelect.innerHTML);
     // 清除現有選項以避免重複添加
     this.visualizationSelect.innerHTML = '';
 
     repos.forEach((repo) => {
       const repoPath = repo.path || repo.label;
+      console.log(repoPath);
       // 檢查是否已存在相同 path 的選項
       const optionElement = document.createElement('option');
       optionElement.value = repoPath;
       optionElement.textContent = repo.label;
       this.visualizationSelect.appendChild(optionElement);
     });
+  }
+
+  setupCurrentRepo(payload) {
+    const currentRepoPath = payload.currentRepoPath;
+    console.log(currentRepoPath);
+    this.visualizationSelect.value = currentRepoPath;
   }
 
   switchVisualizationView() {
@@ -315,13 +321,14 @@ export class UI {
   onExtensionMessage() {
     window.addEventListener('message', (event) => {
       const { data } = event;
-      if (data.type === 'getAvailableRepo') {
+      console.log(data);
+      if (data.type === 'updateAvailableRepos') {
         this.setupVisualizationSelect(data.payload);
+      } else if (data.type === 'setCurrentRepo') {
+        this.setupCurrentRepo(data.payload);
       } else if (data.type === 'getGitLog') {
         this.gitLogInput = data.payload.beforeOperationLog;
         this.gitLogEndState = data.payload.afterOperationLog;
-        console.log(this.gitLogInput);
-        console.log(this.gitLogEndState);
         this.parseGitLog();
       }
     });

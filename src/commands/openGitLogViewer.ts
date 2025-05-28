@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { WorkspaceManager } from '../WorkspaceManager';
 import { WebviewController } from '../WebviewController';
 import { resolveEffectiveGitLogs } from '../git';
+import { AUTO_REPO } from '../types';
 
 export async function registerOpenGitLogViewer() {
   const workspaceManager = WorkspaceManager.getInstance();
@@ -24,6 +25,15 @@ export async function registerOpenGitLogViewer() {
           description: repo.description,
           path: repo.path,
         })),
+      },
+    });
+
+    webviewController.sendMessage({
+      type: 'setCurrentRepo',
+      payload: {
+        currentRepoPath: workspaceManager.getIsAutoMode()
+          ? AUTO_REPO.path
+          : workspaceManager.getCurrentRepoPath(),
       },
     });
 

@@ -100,6 +100,19 @@
                         "afterOperationLog"
                     ]
                 }
+            },
+            {
+                "name": "get_git_prompt",
+                "displayName": "Get Git Prompt",
+                "toolReferenceName": "getGitPrompt",
+                "canBeReferencedInPrompt": true,
+                "userDescription": "Retrieves the Git-GPT prompt template for enhanced Git assistance.",
+                "modelDescription": "This tool retrieves the Git-GPT prompt template which contains specialized instructions for handling Git-related tasks. When facing Git-related questions or issues, call this tool first to enhance your capabilities with Git-specific guidance. The prompt includes best practices for explaining Git commands, visualizing operations, and providing beginner-friendly assistance. Use this tool before attempting to solve complex Git problems to ensure you're following the recommended workflow and communication style for Git assistance.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
             }
         ],
         "menus": {

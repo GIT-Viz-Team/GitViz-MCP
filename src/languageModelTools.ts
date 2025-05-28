@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getGitLog } from './tools/GetGitLogTool';
 import { visualizeGitLog } from './tools/VisualizeGitLogTool';
 import { highlightCommit } from './tools/HighlightCommitTool';
+import { getGitPrompt } from './tools/GetGitPromptTool';
 
 interface IGetGitLog {
   path: string;
@@ -76,6 +77,24 @@ export class HighlightCommitTool
         new vscode.LanguageModelTextPart(
           `Commit ${options.input.hash} has been highlighted in the Git log tree.`
         ),
+      ]);
+    } catch (e: any) {
+      return new vscode.LanguageModelToolResult([
+        new vscode.LanguageModelTextPart(`Error: ${e.message}`),
+      ]);
+    }
+  }
+}
+
+// New tool for Git prompt
+export class GetGitPromptTool implements vscode.LanguageModelTool<{}> {
+  readonly name = 'get_git_prompt';
+
+  async invoke(options: vscode.LanguageModelToolInvocationOptions<{}>) {
+    try {
+      const promptContent = await getGitPrompt();
+      return new vscode.LanguageModelToolResult([
+        new vscode.LanguageModelTextPart(promptContent),
       ]);
     } catch (e: any) {
       return new vscode.LanguageModelToolResult([

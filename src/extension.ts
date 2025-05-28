@@ -5,6 +5,7 @@ import {
   GetGitLogTool,
   VisualizeGitLogTool,
   HighlightCommitTool,
+  GetGitPromptTool,
 } from './languageModelTools';
 import { resolveEffectiveGitLogs, checkoutVersion } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
@@ -110,7 +111,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.lm.registerTool('visualize_git_log', new VisualizeGitLogTool()),
     vscode.lm.registerTool('get_git_log', new GetGitLogTool()),
-    vscode.lm.registerTool('highlight_commit', new HighlightCommitTool())
+    vscode.lm.registerTool('highlight_commit', new HighlightCommitTool()),
+    vscode.lm.registerTool('get_git_prompt', new GetGitPromptTool())
   );
 }
 

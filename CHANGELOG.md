@@ -4,7 +4,13 @@ All notable changes to the "webview" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.1.1] 2025-05-29
+## [0.1.2] 2025-05-29
+
+### Added
+
+- Added MCP Server
+
+## [0.1.1] 2025-05-28
 
 ### Added
 

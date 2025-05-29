@@ -46,7 +46,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
   "servers": {
       "gitViz": {
           "type": "http",
-          "url": "http://localhost:3000/gitviz/sse"
+          "url": "http://localhost:35555/gitviz/sse"
       }
   }
   ```
@@ -58,7 +58,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
   ```json
   "mcpServers": {
       "gitViz": {
-          "url": "http://localhost:3000/gitviz/sse",
+          "url": "http://localhost:35555/gitviz/sse",
           "transportType": "sse"
       }
   }

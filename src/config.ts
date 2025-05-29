@@ -5,6 +5,7 @@ export interface GitVizConfig {
   description: string;
   basePath: string;
   port: number;
+  maxGitLogEntries: number;
 }
 
 export const DEFAULT_CONFIG: GitVizConfig = {
@@ -12,6 +13,7 @@ export const DEFAULT_CONFIG: GitVizConfig = {
   description: 'An interactive Git log visualizer and animation tool',
   basePath: 'GitViz',
   port: 3000,
+  maxGitLogEntries: 30,
 };
 
 export function normalizeBasePath(basePath?: string): string {
@@ -36,5 +38,7 @@ export function readConfig(): GitVizConfig {
       cfg.get<string>('basePath') ?? DEFAULT_CONFIG.basePath
     ),
     port: cfg.get<number>('port') ?? DEFAULT_CONFIG.port,
+    maxGitLogEntries:
+      cfg.get<number>('maxGitLogEntries') ?? DEFAULT_CONFIG.maxGitLogEntries,
   };
 }

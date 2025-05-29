@@ -7,7 +7,7 @@
         "type": "git",
         "url": "https://github.com/GitGPT-nycu/vscode-version-control-chat-ai"
     },
-    "version": "0.1.2",
+    "version": "0.1.3",
     "engines": {
         "vscode": "^1.99.0"
     },
@@ -37,6 +37,12 @@
                     "type": "string",
                     "default": "/gitviz",
                     "description": "Base path prefix for all GitViz MCP endpoints (e.g. /gitviz). Leave empty for root."
+                },
+                "gitVizMcp.maxGitLogEntries": {
+                    "type": "number",
+                    "default": 30,
+                    "minimum": 1,
+                    "description": "Maximum number of git log entries to fetch."
                 }
             }
         },

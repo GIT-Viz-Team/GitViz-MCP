@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { promisify } from 'util';
 import { exec as execCb } from 'child_process';
 import { VIRTUAL_REPO } from './types';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
+import { readConfig } from './config';
 
 const exec = promisify(execCb);
 
@@ -18,9 +17,11 @@ const exec = promisify(execCb);
 export async function getRawGitLogFromRepo(
   repoPath: string
 ): Promise<string | undefined> {
+  const cfg = readConfig();
+
   try {
     const { stdout } = await exec(
-      'git log -n 30 --all --pretty=format:"%h (%an) (%ar) (%s) %d [%p]"',
+      `git log -n ${cfg.maxGitLogEntries} --all --pretty=format:"%h (%an) (%ar) (%s) %d [%p]"`,
       { cwd: repoPath }
     );
     return stdout;

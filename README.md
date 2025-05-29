@@ -94,10 +94,11 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
 
 ### Available Settings
 
-| Setting              | Default     | Description                 |
-| -------------------- | ----------- | --------------------------- |
-| `gitVizMcp.port`     | `3000`      | Port for MCP server         |
-| `gitVizMcp.basePath` | `"/gitviz"` | Base path for API endpoints |
+| Setting                      | Default     | Description                                 |
+| ---------------------------- | ----------- | ------------------------------------------- |
+| `gitVizMcp.port`             | `3000`      | Port for MCP server                         |
+| `gitVizMcp.basePath`         | `"/gitviz"` | Base path for API endpoints                 |
+| `gitVizMcp.maxGitLogEntries` | `30`        | Maximum number of git log entries to fetch. |
 
 **Note**: If you change the gitVizMcp.port or gitVizMcp.basePath settings, you must also update the URL in your MCP Server configuration (e.g., Copilot Config or Cline Config) to match these new values.
 

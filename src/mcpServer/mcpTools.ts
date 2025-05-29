@@ -1,8 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getGitLog } from '../tools/GetGitLogTool';
-import { visualizeGitLog } from '../tools/VisualizeGitLogTool';
-import { highlightCommit } from '../tools/HighlightCommitTool';
+import { getGitLog, visualizeGitLog, highlightCommit } from '../tools';
 
 /**
  * 註冊 MCP Server 工具

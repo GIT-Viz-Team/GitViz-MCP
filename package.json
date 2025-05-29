@@ -28,7 +28,7 @@
             "properties": {
                 "gitVizMcp.port": {
                     "type": "number",
-                    "default": 3000,
+                    "default": 35555,
                     "minimum": 1,
                     "maximum": 65535,
                     "description": "Port GitViz MCP server listens to."

@@ -1,18 +1,20 @@
 import * as vscode from 'vscode';
-import { WebviewController } from './WebviewController';
+import { WebviewController } from './webview/WebviewController';
 import { WorkspaceManager } from './WorkspaceManager';
 import {
   GetGitLogTool,
   VisualizeGitLogTool,
   HighlightCommitTool,
   GetGitPromptTool,
-} from './languageModelTools';
+} from './languageModel/languageModelTools';
 import { resolveEffectiveGitLogs, checkoutVersion } from './git';
 import { VirtualRepoStateManager } from './VirtualRepoStateManager';
-import { McpServerManager } from './server/McpServerManager';
-import { registerGitVizToVsCode } from './commands/registerGitViz';
-import { registerSelectRepo } from './commands/selectRepo';
-import { registerOpenGitLogViewer } from './commands/openGitLogViewer';
+import { McpServerManager } from './mcpServer/McpServerManager';
+import {
+  registerOpenGitLogViewer,
+  registerGitVizToVsCode,
+  registerSelectRepo,
+} from './commands';
 import { GitRepository, AUTO_REPO } from './types';
 
 export function activate(context: vscode.ExtensionContext) {

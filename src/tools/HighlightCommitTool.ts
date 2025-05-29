@@ -1,4 +1,4 @@
-import { WebviewController } from '../WebviewController';
+import { WebviewController } from '../webview/WebviewController';
 
 export function highlightCommit(hash: string) {
   if (!hash) {

@@ -96,7 +96,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
 
 | Setting                      | Default     | Description                                 |
 | ---------------------------- | ----------- | ------------------------------------------- |
-| `gitVizMcp.port`             | `3000`      | Port for MCP server                         |
+| `gitVizMcp.port`             | `35555`     | Port for MCP server                         |
 | `gitVizMcp.basePath`         | `"/gitviz"` | Base path for API endpoints                 |
 | `gitVizMcp.maxGitLogEntries` | `30`        | Maximum number of git log entries to fetch. |
 

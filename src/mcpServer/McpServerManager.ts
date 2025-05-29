@@ -8,13 +8,12 @@ import { handleSseConnection, handleMessagePost } from './sseHandlers';
 import { readConfig } from '../config';
 
 /**
- * 單例管理 MCP Server 與 HTTP 服務。
- * 提供 start() 與 restart() 方法，並支援資源釋放。
+ * McpServerManager 負責管理 MCP Server 與 HTTP 服務的生命週期
+ * 提供啟動、重啟與釋放資源等功能
  */
 export class McpServerManager {
-  // 靜態實例，用於保存 McpServerManager 的唯一實例（Singleton 模式）。
-  private static _instance: McpServerManager | null = null;
-  private static _context: vscode.ExtensionContext;
+  private static instance: McpServerManager | null = null;
+  private static context: vscode.ExtensionContext;
 
   private mcpServer?: McpServer;
   private httpServer?: any;
@@ -25,31 +24,30 @@ export class McpServerManager {
   private constructor() {}
 
   /**
-   * 初始化
-   * @param context VSCode ExtensionContext，用來取得擴充套件的根目錄與資源存取。
+   * 初始化 Singleton 實例
+   * @param context VSCode ExtensionContext
    */
   public static init(context: vscode.ExtensionContext) {
-    this._context = context;
-    if (!this._instance) {
-      this._instance = new McpServerManager();
+    this.context = context;
+    if (!this.instance) {
+      this.instance = new McpServerManager();
     }
   }
 
   /**
-   * 獲取 McpServerManager 的單一實例。
-   * @returns McpServerManager 的單一實例。
+   * 取得 Singleton 實例，若尚未初始化會丟出錯誤
    */
   public static getInstance(): McpServerManager {
-    if (!this._instance) {
+    if (!this.instance) {
       throw new Error(
         'McpServerManager has not been initialized. Call McpServerManager.init() first.'
       );
     }
-    return this._instance;
+    return this.instance;
   }
 
   /**
-   * 啟動 MCP Server 與 HTTP 服務。
+   * 啟動 MCP Server 與 HTTP 服務
    */
   public start(): void {
     const config = readConfig();
@@ -58,7 +56,7 @@ export class McpServerManager {
 
     // 初始化 MCP 伺服器
     this.mcpServer = new McpServer({
-      name: 'Git Visualize Server',
+      name: 'GitViz MCP Server',
       version: '1.0.0',
     });
 
@@ -111,7 +109,7 @@ export class McpServerManager {
       );
     }
 
-    // 註冊 Workspace 監控：若已存在，先 dispose 以避免重複註冊
+    // 監控 Workspace 變更，若有變更則自動重新啟動 MCP Server
     this.workspaceWatcherDisposable?.dispose();
     this.workspaceWatcherDisposable =
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
@@ -120,12 +118,12 @@ export class McpServerManager {
         );
         this.restart();
       });
-    McpServerManager._context.subscriptions.push(
+    McpServerManager.context.subscriptions.push(
       this.workspaceWatcherDisposable
     );
 
     // 註冊 VS Code 停用時的清理邏輯
-    McpServerManager._context.subscriptions.push({
+    McpServerManager.context.subscriptions.push({
       dispose: () => this.dispose(),
     });
   }

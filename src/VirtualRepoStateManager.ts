@@ -8,8 +8,6 @@ export class VirtualRepoStateManager {
 
   private beforeOperationLog: string = '';
   private afterOperationLog: string = '';
-
-  // 訂閱者清單：當 log 更新時會通知這些 listener
   private listeners: ((logs: { before: string; after: string }) => void)[] = [];
 
   private constructor() {}
@@ -36,7 +34,9 @@ export class VirtualRepoStateManager {
   }
 
   /**
-   * 設定兩個 log
+   * 設定操作前後的 Git log，並通知所有訂閱者
+   * @param beforeOperationLog 操作前的 log
+   * @param afterOperationLog 操作後的 log
    */
   public setLogs(beforeOperationLog: string, afterOperationLog: string) {
     this.beforeOperationLog = beforeOperationLog;
@@ -45,7 +45,7 @@ export class VirtualRepoStateManager {
   }
 
   /**
-   * 取得目前的 log 狀態
+   * 取得目前的 Git log 狀態
    */
   public getLogs(): { before: string; after: string } {
     return {
@@ -56,7 +56,7 @@ export class VirtualRepoStateManager {
 
   /**
    * 訂閱 log 變更事件
-   * @param callback 每次變更時會被呼叫，提供最新的 before/after log
+   * @param callback 變更時呼叫的函式，包含最新的 before/after log
    */
   public onChange(
     callback: (logs: { before: string; after: string }) => void
@@ -75,7 +75,7 @@ export class VirtualRepoStateManager {
   }
 
   /**
-   * 清除目前所有的 log 狀態（重置）
+   * 清除目前的 Git log 狀態，並通知所有訂閱者
    */
   public clear(): void {
     this.beforeOperationLog = '';

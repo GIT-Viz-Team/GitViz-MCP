@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { WorkspaceManager } from '../WorkspaceManager';
-import { WebviewController } from '../WebviewController';
+import { WebviewController } from '../webview/WebviewController';
 import { resolveEffectiveGitLogs } from '../git';
 import { AUTO_REPO } from '../types';
 

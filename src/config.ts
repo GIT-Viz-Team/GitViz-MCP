@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG: GitVizConfig = {
   projectName: 'GitViz',
   description: 'An interactive Git log visualizer and animation tool',
   basePath: 'GitViz',
-  port: 3000,
+  port: 35555,
   maxGitLogEntries: 30,
 };
 

@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
-import { getGitLog } from './tools/GetGitLogTool';
-import { visualizeGitLog } from './tools/VisualizeGitLogTool';
-import { highlightCommit } from './tools/HighlightCommitTool';
-import { getGitPrompt } from './tools/GetGitPromptTool';
+import {
+  getGitLog,
+  visualizeGitLog,
+  highlightCommit,
+  getGitPrompt,
+} from '../tools';
 
 interface IGetGitLog {
   path: string;

@@ -1,4 +1,4 @@
-import { WebviewController } from '../WebviewController';
+import { WebviewController } from '../webview/WebviewController';
 import { VirtualRepoStateManager } from '../VirtualRepoStateManager';
 import { WorkspaceManager } from '../WorkspaceManager';
 import { AUTO_REPO, VIRTUAL_REPO } from '../types';

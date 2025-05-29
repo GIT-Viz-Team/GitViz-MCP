@@ -8,7 +8,6 @@ import { VirtualRepoStateManager } from './VirtualRepoStateManager';
  * 包含自動/手動切換 repo、狀態顯示邏輯由外部傳入 callback 控制。
  */
 export class WorkspaceManager {
-  // Singleton 實例：確保全域僅有一個 WorkspaceManager
   private static instance: WorkspaceManager;
 
   // 目前選定的 Git 存放庫路徑，null 表示尚未選定`
@@ -21,7 +20,6 @@ export class WorkspaceManager {
   private gitAPI: any;
 
   private virtualRepoManager: VirtualRepoStateManager;
-  private readonly virtualRepoLabel = '[Virtual] GitGPT Agent';
 
   private readonly _onRepoChanged = new vscode.EventEmitter<string | null>();
   private readonly _onRepoRegistered = new vscode.EventEmitter<string>();
@@ -30,12 +28,10 @@ export class WorkspaceManager {
 
   /**
    * 建構子 - 初始化 Git API、註冊 repo 事件、根據目前檔案選擇 repo
-   * @param onRepoChange 當 repo 發生變化時觸發的 callback
    */
   private constructor() {
     // 當 virtualRepo 狀態改變時，通知外部
     this.virtualRepoManager = VirtualRepoStateManager.getInstance();
-
     this.virtualRepoManager.onChange(() => {
       this._onRepoChanged.fire(VIRTUAL_REPO.path);
     });
@@ -93,7 +89,6 @@ export class WorkspaceManager {
 
   /**
    * 初始化 Singleton 實例
-   * @param onRepoChange repo 切換時要觸發的 callback
    */
   public static init() {
     if (!WorkspaceManager.instance) {
@@ -131,15 +126,15 @@ export class WorkspaceManager {
   }
 
   /**
-   * 取得目前是否啟用自動模式的狀態。
-   * @returns boolean - 如果啟用自動模式則為 true，否則為 false。
+   * 取得是否為自動模式
    */
   public getIsAutoMode(): boolean {
     return this.isAutoMode;
   }
+
   /**
    * 更新當前 repo 狀態與回傳通知
-   * @param repoPath repo 的唯一識別（path）
+   * @param repoPath 選定的 repo 路徑
    */
   public updateStatus(repoPath: string) {
     this.currentRepoPath = repoPath;

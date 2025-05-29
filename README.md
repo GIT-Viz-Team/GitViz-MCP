@@ -8,95 +8,89 @@ A powerful VS Code extension that visualizes Git history and commit logs with an
 
 ## Features
 
-### Animated Git Visualization
-
-- **Before/After Animations**: Visualize how Git operations like merge, rebase, and cherry-pick transform your commit tree
-- **Interactive Controls**: Play, pause
-
-### Git History Analysis
-
-- **Branch Structure**: Clear visualization of branch relationships an`d merge points
-- **Commit Highlighting**: Click to highlight specific commits in the tree
-- **Real-time Updates**: Automatically reflects changes in your working directory
-
-### AI-Powered Git Assistance
-
-- **Language Model Integration**: Built-in tools for Git analysis and assistance
-- **Smart Repository Detection**: Automatically detects and switches between repositories
-- **Enhanced Git Commands**: Integrated AI tools for better Git workflow
-
-## Installation
-
-### From VS Code Marketplace
-
-1. Open VS Code
-2. Go to Extensions (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Search for "GitViz MCP"
-4. Click **Install**
-
-### Manual Installation
-
-1. Download the `.vsix` file from [releases](https://github.com/your-repo/releases)
-2. Open VS Code
-3. Run `Extensions: Install from VSIX...` from Command Palette
-4. Select the downloaded file
-
-### MCP Server Config
-
-#### Copilot Config
-
-```
-"servers": {
-    "gitViz": {
-        "type": "http",
-        "url": "http://localhost:3000/gitviz/sse"
-    }
-}
-```
-
-or use command `gitVizMcp: Register MCP Server`.
-
-#### Cline Config
-
-```
-"mcpServers": {
-    "gitViz": {
-        "url": "http://localhost:3000/gitviz/sse",
-        "transportType": "sse"
-    }
-}
-```
+- **Before/After Animations**: Visualize how Git operations like merge, rebase, and cherry-pick transform your commit tree.
+- **Interactive Controls**: Play, pause animations.
+- **Branch Structure**: Clear visualization of branch relationships and merge points.
+- **Commit Highlighting**: Click to highlight specific commits in the tree.
+- **Real-time Updates**: Automatically reflects changes in your working directory.
+- **Language Model Integration**: Built-in tools for Git analysis and assistance.
+- **Smart Repository Detection**: Automatically detects and switches between repositories.
+- **Enhanced Git Commands**: Integrated AI tools for a better Git workflow.
 
 ## Usage
 
-### Opening Git Visualizer
+### Install the GitViz MCP Extension
 
-- **From Editor**: Click the Git branch icon in the editor title bar
-- **From Command Palette**: `Ctrl+Shift+P` → "gitVizMcp: Open Git Log Viewer"
+You can install the extension in one of the following ways:
 
-### Basic Operations
+**From VS Code Marketplace**
 
-1. **Select Repository**: Use "gitVizMcp: Set Repository" to choose which repo to visualize
-2. **View Animation**: The interface will show before/after states of Git operations
-3. **Control Playback**: Use play/pause button to control animation timing
-4. **Zoom & Navigate**: Use zoom controls to explore complex commit trees
+Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`) and click **Install**.
 
-### Repository Management
+**Manual Installation**
 
-- **Auto Mode**: Automatically switch repository based on current file
-- **Manual Selection**: Choose specific repository from available options
-- **Multiple Workspaces**: Supports multi-root workspaces
+1.  Download the `.vsix` file from [releases](https://github.com/your-repo/releases) (please replace with the actual release link).
+2.  Open VS Code.
+3.  Run `Extensions: Install from VSIX...` from the Command Palette.
+4.  Select the downloaded `.vsix` file.
 
-## Configuration
+### Configure Based on Your Environment
 
-Configure GitViz MCP in VS Code settings:
+- **For Copilot Users**:
 
-```json
-{
-  "gitVizMcp.port": 3000,
-  "gitVizMcp.basePath": "/gitviz"
-}
-```
+  It is recommended to use the extension directly, as MCP Server setup is usually not required.
+
+  If you still need to manually configure the MCP Server, refer to the `Copilot Config` below or run the `gitVizMcp: Register MCP Server` command from the VS Code Command Palette.
+
+  ```json
+  "servers": {
+      "gitViz": {
+          "type": "http",
+          "url": "http://localhost:3000/gitviz/sse"
+      }
+  }
+  ```
+
+- **For Cline Users**:
+
+  Please configure using the `Cline Config` below:
+
+  ```json
+  "mcpServers": {
+      "gitViz": {
+          "url": "http://localhost:3000/gitviz/sse",
+          "transportType": "sse"
+      }
+  }
+  ```
+
+- **For Cursor Users**:
+
+  This extension does not currently support Cursor.
+
+### Basic Operational Flow
+
+![demo video](demo\demo_video_1.gif)
+
+**Opening Git Visualizer**
+
+- **From Editor**: Click the Git branch icon in the editor title bar.
+- **From Command Palette**: `Ctrl+Shift+P` → type "gitVizMcp: Open Git Log Viewer".
+
+**Basic Operations**
+
+1.  **Select Repository**: Use the "gitVizMcp: Set Repository" command to choose which repository to visualize.
+2.  **View Animation**: The interface will show the before/after states of Git operations.
+3.  **Control Playback**: Use the play/pause button to control animation timing.
+4.  **Zoom & Navigate**: Use zoom controls to explore complex commit trees.
+
+**Repository Management**
+
+- **Auto Mode**: Automatically switch repository based on the currently open file.
+- **Manual Selection**: Choose a specific repository from available options.
+- **Multiple Workspaces**: Supports multi-root workspaces.
+
+## Other Settings & Tools
 
 ### Available Settings
 
@@ -105,7 +99,9 @@ Configure GitViz MCP in VS Code settings:
 | `gitVizMcp.port`     | `3000`      | Port for MCP server         |
 | `gitVizMcp.basePath` | `"/gitviz"` | Base path for API endpoints |
 
-## Commands
+**Note**: If you change the gitVizMcp.port or gitVizMcp.basePath settings, you must also update the URL in your MCP Server configuration (e.g., Copilot Config or Cline Config) to match these new values.
+
+### Commands
 
 | Command                          | Description                             |
 | -------------------------------- | --------------------------------------- |
@@ -127,26 +123,6 @@ This extension provides AI tools for enhanced Git experience:
 
 - **VS Code**: Version 1.99.0 or higher
 - **Git**: Must be installed and accessible via command line
-- **Internet Connection**: Required for loading visualization libraries
-
-## Known Issues
-
-- Large repositories may take longer to load initially
-- Animation performance may vary based on system specifications
-
-## Release Notes
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
-
-<!-- ## Contributing
-
-We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for details. -->
-
-<!-- ## Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Documentation**: [Wiki](https://github.com/your-repo/wiki)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions) -->
 
 ## License
 

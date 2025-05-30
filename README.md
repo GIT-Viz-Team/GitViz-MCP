@@ -29,7 +29,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
 
 **Manual Installation**
 
-1.  Download the `.vsix` file from [releases](https://github.com/your-repo/releases) (please replace with the actual release link).
+1.  Download the `.vsix` file from [releases](https://github.com/GitGPT-nycu/vscode-version-control-chat-ai/releases/latest) (please replace with the actual release link).
 2.  Open VS Code.
 3.  Run `Extensions: Install from VSIX...` from the Command Palette.
 4.  Select the downloaded `.vsix` file.
@@ -70,7 +70,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
 
 ### Basic Operational Flow
 
-![demo video](demo/demo_video_1.gif)
+![demo video](assets/demo_video_1.gif)
 
 **Opening Git Visualizer**
 

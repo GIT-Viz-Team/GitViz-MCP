@@ -4,6 +4,12 @@ All notable changes to the "webview" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.4] 2025-05-30
+
+### Changed
+
+- Changed Github repository to "GIT-Viz-Team/GitViz-MCP"
+
 ## [0.1.3] 2025-05-30
 
 ### Added

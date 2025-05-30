@@ -6,9 +6,9 @@
     "icon": "assets/logo.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/GitGPT-nycu/vscode-version-control-chat-ai"
+        "url": "https://github.com/GIT-Viz-Team/GitViz-MCP"
     },
-    "version": "0.1.3",
+    "version": "0.1.4",
     "engines": {
         "vscode": "^1.99.0"
     },

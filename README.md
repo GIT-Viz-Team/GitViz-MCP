@@ -70,7 +70,7 @@ Search for "GitViz MCP" in the VS Code Extensions view (`Ctrl+Shift+X` / `Cmd+Sh
 
 ### Basic Operational Flow
 
-![demo video](demo\demo_video_1.gif)
+![demo video](demo/demo_video_1.gif)
 
 **Opening Git Visualizer**
 

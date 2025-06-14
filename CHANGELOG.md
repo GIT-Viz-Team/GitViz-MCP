@@ -4,6 +4,12 @@ All notable changes to the "webview" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.5] 2025-06-14
+
+### Added
+
+- Added `#highlight_commit` command to highlight specific commits in the Git log tree
+
 ## [0.1.4] 2025-05-30
 
 ### Changed

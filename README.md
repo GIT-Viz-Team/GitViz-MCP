@@ -6,6 +6,28 @@
 
 A powerful VS Code extension that visualizes Git history and commit logs with animations, making Git operations intuitive and easy to understand.
 
+## 💬 Give Us Feedback
+
+Help us improve!
+Share your thoughts, suggestions, or issues via our feedback forms:
+
+* [**English Feedback Form**](https://docs.google.com/forms/d/e/1FAIpQLSc7q2L4pPo59RWI1xR8JrJxFPz-4Zu_OAoGHNh30ReIGJnpdg/viewform)
+* [**中文版表單**](https://docs.google.com/forms/d/e/1FAIpQLSetdTsvAJdM5rxallzou3vwweh4rObipBiA5tVcxO71PCXeoA/viewform?usp=header)
+
+Your feedback makes a difference. We read every submission. 🙏
+
+## 🚀 Boost Copilot with Git Commands
+
+Want Copilot to better understand Git? 🤖✨ Just use `#get_git_prompt`!
+
+This helps Copilot generate smarter suggestions for Git-related tasks.
+
+Try something like this:
+
+```
+#get_git_prompt What is the commit message of the latest commit?
+```
+
 ## Features
 
 - **Before/After Animations**: Visualize how Git operations like merge, rebase, and cherry-pick transform your commit tree.

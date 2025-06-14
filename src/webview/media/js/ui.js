@@ -318,6 +318,14 @@ export class UI {
     });
   }
 
+  highlightCommit(hash) {
+    if (this.visualizer) {
+      this.visualizer.highlightCommit(hash);
+    } else {
+      console.warn('Visualizer not initialized, cannot highlight commit');
+    }
+  }
+
   onExtensionMessage() {
     window.addEventListener('message', (event) => {
       const { data } = event;
@@ -330,6 +338,8 @@ export class UI {
         this.gitLogInput = data.payload.beforeOperationLog;
         this.gitLogEndState = data.payload.afterOperationLog;
         this.parseGitLog();
+      } else if (data.type === 'highlightCommit') {
+        this.highlightCommit(data.payload.hash);
       }
     });
   }

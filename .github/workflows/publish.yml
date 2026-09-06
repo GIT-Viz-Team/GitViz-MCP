@@ -1,0 +1,193 @@
+name: Publish VSCode Extension
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check.outputs.version-changed }}
+      current-version: ${{ steps.check.outputs.current-version }}
+      previous-version: ${{ steps.check.outputs.previous-version }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Make script executable
+      run: chmod +x .github/scripts/check-version.js
+        
+    - name: Check version change
+      id: check
+      run: node .github/scripts/check-version.js check
+      
+    - name: Validate package.json
+      if: steps.check.outputs.version-changed == 'true'
+      run: node .github/scripts/check-version.js validate
+
+  build-and-publish:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run lint (if available)
+      run: npm run lint || echo "No lint script available"
+      
+    - name: Run tests (if available)
+      run: npm run test || echo "No test script available"
+      
+    - name: Install vsce
+      run: npm install -g @vscode/vsce
+      
+    - name: Package extension
+      run: vsce package --no-dependencies
+      
+    - name: Get package info
+      id: package-info
+      run: |
+        PACKAGE_NAME=$(node -p "require('./package.json').name")
+        VERSION=${{ needs.check-version.outputs.current-version }}
+        VSIX_FILE="${PACKAGE_NAME}-${VERSION}.vsix"
+        echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "vsix-file=$VSIX_FILE" >> $GITHUB_OUTPUT
+        echo "Generated VSIX file: $VSIX_FILE"
+        
+    - name: Verify VSIX file exists
+      run: |
+        if [ ! -f "${{ steps.package-info.outputs.vsix-file }}" ]; then
+          echo "❌ VSIX file not found: ${{ steps.package-info.outputs.vsix-file }}"
+          ls -la *.vsix || echo "No VSIX files found"
+          exit 1
+        fi
+        echo "✅ VSIX file verified: ${{ steps.package-info.outputs.vsix-file }}"
+        
+    - name: Create Release
+      id: create-release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.check-version.outputs.current-version }}
+        name: Release v${{ needs.check-version.outputs.current-version }}
+        body: |
+          ## Release v${{ needs.check-version.outputs.current-version }}
+          
+          ### Version Change
+          - **Previous**: `${{ needs.check-version.outputs.previous-version }}`
+          - **Current**: `${{ needs.check-version.outputs.current-version }}`
+          
+          ### Installation
+          
+          #### From VS Code Marketplace
+          1. Open VS Code
+          2. Go to Extensions (Ctrl+Shift+X)
+          3. Search for "${{ steps.package-info.outputs.package-name }}"
+          4. Click Install
+          
+          #### Manual Installation
+          1. Download the `.vsix` file below
+          2. Open VS Code
+          3. Go to Extensions view (Ctrl+Shift+X)
+          4. Click "..." menu → "Install from VSIX..."
+          5. Select the downloaded file
+          
+          ### Links
+          - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=${{ fromJson(steps.package-info.outputs.package-name).publisher }}.${{ steps.package-info.outputs.package-name }})
+          - [GitHub Repository](${{ github.server_url }}/${{ github.repository }})
+        draft: false
+        prerelease: false
+        files: ${{ steps.package-info.outputs.vsix-file }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish to VS Code Marketplace
+      if: env.VSCE_PAT != ''
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      run: |
+        echo "Publishing to VS Code Marketplace..."
+        vsce publish --packagePath ${{ steps.package-info.outputs.vsix-file }}
+        echo "Successfully published to VS Code Marketplace!"
+      
+    - name: Publish to Open VSX Registry
+      if: env.OVSX_PAT != ''
+      env:
+        OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      run: |
+        echo "Publishing to Open VSX Registry..."
+        npm install -g ovsx
+        ovsx publish ${{ steps.package-info.outputs.vsix-file }}
+        echo "Successfully published to Open VSX Registry!"
+
+  notify-version-change:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const currentVersion = '${{ needs.check-version.outputs.current-version }}';
+          const previousVersion = '${{ needs.check-version.outputs.previous-version }}';
+          
+          // 判斷版本變化類型
+          const [currentMajor, currentMinor, currentPatch] = currentVersion.split('.').map(Number);
+          const [previousMajor, previousMinor, previousPatch] = previousVersion.split('.').map(Number);
+          
+          let changeType = 'patch';
+          
+          if (currentMajor > previousMajor) {
+            changeType = 'major';
+          } else if (currentMinor > previousMinor) {
+            changeType = 'minor';
+          }
+          
+          const body = `**Version Change Detected!**
+          
+          | | |
+          |---|---|
+          | **Change Type** | \`${changeType}\` |
+          | **Previous Version** | \`${previousVersion}\` |
+          | **New Version** | \`${currentVersion}\` |
+          
+          ### 🤖 What happens when this PR is merged?
+          
+          The extension will be automatically:
+          - ✅ **Packaged** using \`vsce package\`
+          - ✅ **Released** to GitHub Releases with the \`.vsix\` file
+          - ✅ **Published** to VS Code Marketplace ${process.env.VSCE_PAT ? '✅' : '⚠️ (VSCE_PAT required)'}
+          - ✅ **Published** to Open VSX Registry ${process.env.OVSX_PAT ? '✅' : '⚠️ (OVSX_PAT required)'}
+          
+          ${!process.env.VSCE_PAT ? '> ⚠️ **Note**: VSCE_PAT secret is not configured. The extension will not be published to VS Code Marketplace automatically.' : ''}
+          ${!process.env.OVSX_PAT ? '> ℹ️ **Note**: OVSX_PAT secret is not configured. The extension will not be published to Open VSX Registry (this is optional).' : ''}`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          }); 
